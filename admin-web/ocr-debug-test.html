@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR数据传输调试测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .success { border-color: #4CAF50; background: #f8fff8; }
+        .error { border-color: #f44336; background: #fff8f8; }
+        .info { border-color: #2196F3; background: #f8f8ff; }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        .danger { background: #f44336; }
+        .danger:hover { background: #da190b; }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .preview {
+            max-width: 300px;
+            max-height: 300px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .stat {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 OCR数据传输调试测试</h1>
+    <p>专门用于诊断OCR图片数据传输问题的测试页面</p>
+
+    <!-- 基础连接测试 -->
+    <div class="section info">
+        <h3>🌐 基础连接测试</h3>
+        <button onclick="testConnection()">测试服务器连接</button>
+        <button onclick="testOCRStatus()">测试OCR服务状态</button>
+        <div id="connectionResult"></div>
+    </div>
+
+    <!-- 图片选择和预览 -->
+    <div class="section">
+        <h3>📷 图片选择和预览</h3>
+        <input type="file" id="imageInput" accept="image/*" onchange="handleImageSelect(event)">
+        <div id="imagePreview"></div>
+        <div class="stats" id="imageStats"></div>
+    </div>
+
+    <!-- 数据处理测试 -->
+    <div class="section">
+        <h3>🔧 数据处理测试</h3>
+        <button onclick="testImageProcessing()" disabled id="processBtn">测试图片处理</button>
+        <div id="processingResult"></div>
+    </div>
+
+    <!-- OCR识别测试 -->
+    <div class="section">
+        <h3>🤖 增强OCR识别测试</h3>
+        <p style="color: #666; font-size: 14px;">✨ 新功能：增强提示词、智能错误修正、置信度评估、专业数学题识别</p>
+        <button onclick="testOCRRecognition()" disabled id="ocrBtn">发送增强OCR请求</button>
+        <div id="ocrResult"></div>
+    </div>
+
+    <!-- 详细日志 -->
+    <div class="section">
+        <h3>📋 详细日志</h3>
+        <button onclick="clearLogs()" class="danger">清除日志</button>
+        <pre id="debugLogs"></pre>
+    </div>
+
+    <script>
+        let currentImageData = null;
+        let currentImageFile = null;
+
+        // 日志函数
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLogs');
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            logElement.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('debugLogs').textContent = '';
+        }
+
+        // 基础连接测试
+        async function testConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            try {
+                log('测试服务器连接...');
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ 服务器连接正常<br>状态: ${data.status}</div>`;
+                    log('服务器连接成功');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 连接失败: ${error.message}</div>`;
+                log(`服务器连接失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testOCRStatus() {
+            const resultDiv = document.getElementById('connectionResult');
+            try {
+                log('测试OCR服务状态...');
+                const response = await fetch('http://localhost:3000/api/ocr/status');
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML += `<div class="success">✅ OCR服务正常<br>模型: ${data.data.ocr}<br>状态: ${data.data.status}</div>`;
+                    log('OCR服务状态正常');
+                } else {
+                    throw new Error('OCR服务异常');
+                }
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="error">❌ OCR服务测试失败: ${error.message}</div>`;
+                log(`OCR服务测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 图片选择处理
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            currentImageFile = file;
+            log(`选择图片: ${file.name}, 大小: ${Math.round(file.size/1024)}KB, 类型: ${file.type}`);
+
+            // 显示图片预览
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewDiv = document.getElementById('imagePreview');
+                previewDiv.innerHTML = `<img src="${e.target.result}" class="preview" alt="预览">`;
+                
+                // 显示图片统计信息
+                const img = new Image();
+                img.onload = function() {
+                    const statsDiv = document.getElementById('imageStats');
+                    statsDiv.innerHTML = `
+                        <div class="stat">
+                            <strong>文件名</strong><br>
+                            ${file.name}
+                        </div>
+                        <div class="stat">
+                            <strong>文件大小</strong><br>
+                            ${Math.round(file.size/1024)}KB
+                        </div>
+                        <div class="stat">
+                            <strong>图片尺寸</strong><br>
+                            ${img.width} × ${img.height}
+                        </div>
+                        <div class="stat">
+                            <strong>图片类型</strong><br>
+                            ${file.type}
+                        </div>
+                    `;
+                    
+                    log(`图片信息: ${img.width}×${img.height}, ${file.type}`);
+                    
+                    // 启用处理按钮
+                    document.getElementById('processBtn').disabled = false;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 测试图片处理
+        function testImageProcessing() {
+            if (!currentImageFile) {
+                log('请先选择图片', 'error');
+                return;
+            }
+
+            const resultDiv = document.getElementById('processingResult');
+            log('开始处理图片数据...');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const base64Data = e.target.result;
+                    const base64String = base64Data.split(',')[1]; // 移除data:image/...;base64,前缀
+                    
+                    currentImageData = base64String;
+                    
+                    const stats = {
+                        原始大小: Math.round(currentImageFile.size / 1024) + 'KB',
+                        Base64大小: Math.round(base64String.length / 1024) + 'KB',
+                        编码比例: Math.round((base64String.length / currentImageFile.size) * 100) + '%',
+                        前50字符: base64String.substring(0, 50) + '...'
+                    };
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ 图片处理完成<br>
+                            <strong>数据统计:</strong><br>
+                            ${Object.entries(stats).map(([key, value]) => `${key}: ${value}`).join('<br>')}
+                        </div>
+                    `;
+                    
+                    log(`图片处理完成，Base64大小: ${Math.round(base64String.length/1024)}KB`);
+                    
+                    // 启用OCR按钮
+                    document.getElementById('ocrBtn').disabled = false;
+                    
+                } catch (error) {
+                    resultDiv.innerHTML = `<div class="error">❌ 图片处理失败: ${error.message}</div>`;
+                    log(`图片处理失败: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsDataURL(currentImageFile);
+        }
+
+        // 测试OCR识别
+        async function testOCRRecognition() {
+            if (!currentImageData) {
+                log('请先处理图片数据', 'error');
+                return;
+            }
+
+            const resultDiv = document.getElementById('ocrResult');
+            resultDiv.innerHTML = '<div class="info">🔄 正在发送OCR请求...</div>';
+            
+            log('准备发送OCR请求...');
+            
+            const requestData = {
+                imageData: currentImageData,
+                format: 'base64'
+            };
+            
+            // 记录请求数据统计
+            const requestSize = JSON.stringify(requestData).length;
+            log(`OCR请求数据大小: ${Math.round(requestSize/1024)}KB`);
+            log(`图片数据长度: ${currentImageData.length} 字符`);
+            log(`图片数据前50字符: ${currentImageData.substring(0, 50)}...`);
+
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch('http://localhost:3000/api/ocr/recognize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const responseTime = Date.now() - startTime;
+                log(`OCR请求耗时: ${responseTime}ms`);
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const confidence = result.data.confidence || 0;
+                    const confidencePercent = Math.round(confidence * 100);
+                    const confidenceColor = confidence > 0.8 ? '#4CAF50' : confidence > 0.6 ? '#FF9800' : '#f44336';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ 增强OCR识别成功<br>
+                            <strong>响应时间:</strong> ${responseTime}ms<br>
+                            <strong>使用模型:</strong> ${result.data.model || 'N/A'}<br>
+                            <strong>智能置信度:</strong> <span style="color: ${confidenceColor}; font-weight: bold;">${confidencePercent}%</span><br>
+                            <strong>请求ID:</strong> ${result.data.requestId || 'N/A'}<br>
+                            <strong>处理后的识别结果:</strong><br>
+                            <pre style="background: #e8f5e8; border-left: 4px solid #4CAF50;">${result.data.ocrText}</pre>
+                            ${result.data.rawText ? `
+                            <strong>原始识别文本:</strong><br>
+                            <pre style="background: #f0f0f0; font-size: 12px;">${result.data.rawText}</pre>
+                            ` : ''}
+                        </div>
+                    `;
+                    log('增强OCR识别成功', 'success');
+                    log(`智能置信度: ${confidencePercent}%`);
+                    log(`识别文字长度: ${result.data.ocrText?.length || 0} 字符`);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ OCR识别失败<br>
+                            <strong>错误信息:</strong> ${result.error || result.message || '未知错误'}<br>
+                            <strong>响应状态:</strong> ${response.status}<br>
+                            <strong>详细信息:</strong><br>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                    log(`OCR识别失败: ${result.error || result.message}`, 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 网络请求失败: ${error.message}</div>`;
+                log(`OCR请求失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载完成后自动测试连接
+        window.onload = function() {
+            log('页面加载完成，开始自动测试...');
+            testConnection();
+        };
+    </script>
+</body>
+</html> 

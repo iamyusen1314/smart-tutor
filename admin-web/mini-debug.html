@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>小程序网络诊断</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .section { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+        .btn { padding: 10px 20px; margin: 5px; background: #007aff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; font-family: monospace; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 小程序网络诊断</h1>
+        
+        <div class="section">
+            <h3>📊 当前配置</h3>
+            <p><strong>服务器地址:</strong> http://192.168.31.180:3000</p>
+            <p><strong>小程序配置:</strong> miniprogram/app.js</p>
+        </div>
+
+        <div class="section">
+            <h3>🚀 快速测试</h3>
+            <button class="btn" onclick="testAll()">开始诊断</button>
+            <button class="btn" onclick="clearResults()">清除结果</button>
+        </div>
+
+        <div class="section">
+            <h3>📋 测试结果</h3>
+            <div id="results"></div>
+        </div>
+
+        <div class="section">
+            <h3>💡 常见问题解决方案</h3>
+            <div id="solutions">
+                <div class="result info">
+                    <strong>如果测试失败：</strong><br>
+                    1. 检查服务器是否启动在 3000 端口<br>
+                    2. 确认服务器监听 0.0.0.0:3000 而非 localhost:3000<br>
+                    3. 微信开发者工具中开启"不校验合法域名"<br>
+                    4. 检查 IP 地址是否正确: 192.168.31.180
+                </div>
+                <div class="result info">
+                    <strong>小程序端检查：</strong><br>
+                    1. app.js 中 globalData.apiHost 配置<br>
+                    2. utils/util.js 中 request 函数<br>
+                    3. 网络请求的错误处理逻辑<br>
+                    4. 控制台错误信息
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const serverHost = 'http://192.168.31.180:3000';
+
+        function addResult(message, type) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testConnection() {
+            try {
+                const response = await fetch(`${serverHost}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ 基础连接成功 - 状态: ${data.status}`, 'success');
+                    return true;
+                } else {
+                    addResult(`❌ 基础连接失败 - HTTP ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                addResult(`❌ 基础连接失败 - ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testAIChat() {
+            try {
+                const response = await fetch(`${serverHost}/api/ai-chat/tutoring`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question: '1+1=?',
+                        studentInput: '我不知道',
+                        subject: 'math',
+                        grade: 1,
+                        currentStep: 'understanding'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ AI聊天接口正常 - 模型: ${data.data?.model || '未知'}`, 'success');
+                    return true;
+                } else {
+                    addResult(`❌ AI聊天接口失败 - HTTP ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                addResult(`❌ AI聊天接口失败 - ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testAll() {
+            addResult('🚀 开始网络诊断...', 'info');
+            
+            const connectionOK = await testConnection();
+            if (connectionOK) {
+                await testAIChat();
+            }
+            
+            addResult('✅ 诊断完成！', 'info');
+        }
+
+        // 页面加载时提示
+        window.addEventListener('load', () => {
+            addResult('🔧 诊断工具已准备就绪，点击"开始诊断"按钮测试', 'info');
+        });
+    </script>
+</body>
+</html> 

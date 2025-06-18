@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕐 AI聊天超时处理测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #E91E63;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid #E91E63;
+        }
+        
+        .test-section h3 {
+            color: #E91E63;
+            margin-top: 0;
+            font-size: 1.4em;
+        }
+        
+        .test-button {
+            background: linear-gradient(45deg, #FF6B9D, #E91E63);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.4);
+        }
+        
+        .test-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .result-area {
+            background: #ffffff;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            color: #28a745;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        
+        .warning {
+            color: #ffc107;
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        
+        .info {
+            color: #17a2b8;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        
+        .stats-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .stats-item {
+            display: inline-block;
+            margin: 10px 15px;
+            text-align: center;
+        }
+        
+        .stats-value {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stats-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #E91E63;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .timeout-simulation {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .timeout-simulation h4 {
+            color: #856404;
+            margin-top: 0;
+        }
+        
+        .scenario-description {
+            background: #e7f3ff;
+            border: 1px solid #b3d4fc;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕐 AI聊天超时处理测试</h1>
+        
+        <div class="stats-panel">
+            <div class="stats-item">
+                <span id="testCount" class="stats-value">0</span>
+                <span class="stats-label">测试次数</span>
+            </div>
+            <div class="stats-item">
+                <span id="successCount" class="stats-value">0</span>
+                <span class="stats-label">成功次数</span>
+            </div>
+            <div class="stats-item">
+                <span id="timeoutCount" class="stats-value">0</span>
+                <span class="stats-label">超时次数</span>
+            </div>
+            <div class="stats-item">
+                <span id="avgResponseTime" class="stats-value">0ms</span>
+                <span class="stats-label">平均响应时间</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🚀 基础AI聊天测试</h3>
+            <div class="scenario-description">
+                测试正常AI聊天功能，验证响应时间和成功率
+            </div>
+            <button class="test-button" onclick="testBasicChat()">正常聊天测试</button>
+            <button class="test-button" onclick="testComplexChat()">复杂问题测试</button>
+            <button class="test-button" onclick="testSimpleChat()">简单问题测试</button>
+            <div id="basicChatResult" class="result-area"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>⏰ 超时处理逻辑测试</h3>
+            <div class="scenario-description">
+                模拟AI响应超时场景，验证智能指引功能是否正常工作
+            </div>
+            <button class="test-button" onclick="testTimeoutHandling()">模拟超时处理</button>
+            <button class="test-button" onclick="testRepeatedTimeout()">连续超时测试</button>
+            <button class="test-button" onclick="testSmartGuidance()">智能指引测试</button>
+            <div id="timeoutResult" class="result-area"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔗 网络异常处理测试</h3>
+            <div class="scenario-description">
+                测试网络连接异常时的离线指引和错误处理机制
+            </div>
+            <button class="test-button" onclick="testNetworkError()">网络错误测试</button>
+            <button class="test-button" onclick="testOfflineGuidance()">离线指引测试</button>
+            <div id="networkErrorResult" class="result-area"></div>
+        </div>
+
+        <div class="timeout-simulation">
+            <h4>⚙️ 超时模拟配置</h4>
+            <label>
+                超时时间设置：
+                <select id="timeoutSettings">
+                    <option value="1000">1秒（快速超时）</option>
+                    <option value="2000">2秒（测试超时）</option>
+                    <option value="5000" selected>5秒（正常超时）</option>
+                    <option value="10000">10秒（宽松超时）</option>
+                </select>
+            </label>
+            <br><br>
+            <label>
+                测试场景：
+                <select id="testScenario">
+                    <option value="normal">正常学习场景</option>
+                    <option value="difficult">困难题目场景</option>
+                    <option value="beginner">初学者场景</option>
+                    <option value="advanced">高级学习场景</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 压力测试</h3>
+            <div class="scenario-description">
+                模拟高频请求和并发场景，测试系统稳定性
+            </div>
+            <button class="test-button" onclick="testConcurrentRequests()">并发请求测试</button>
+            <button class="test-button" onclick="testHighFrequency()">高频请求测试</button>
+            <button class="test-button" onclick="clearStats()">清除统计</button>
+            <div id="stressTestResult" class="result-area"></div>
+        </div>
+    </div>
+
+    <script>
+        let testStats = {
+            testCount: 0,
+            successCount: 0,
+            timeoutCount: 0,
+            totalResponseTime: 0,
+            errors: []
+        };
+
+        const API_BASE = 'http://192.168.31.180:3000';
+
+        function updateStats() {
+            document.getElementById('testCount').textContent = testStats.testCount;
+            document.getElementById('successCount').textContent = testStats.successCount;
+            document.getElementById('timeoutCount').textContent = testStats.timeoutCount;
+            const avgTime = testStats.testCount > 0 ? Math.round(testStats.totalResponseTime / testStats.testCount) : 0;
+            document.getElementById('avgResponseTime').textContent = avgTime + 'ms';
+        }
+
+        function logResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            element.textContent += logMessage;
+            element.className = `result-area ${type}`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearResult(elementId) {
+            document.getElementById(elementId).textContent = '';
+            document.getElementById(elementId).className = 'result-area';
+        }
+
+        async function makeAIRequest(url, data, timeout = 5000) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(`${API_BASE}${url}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                const responseTime = Date.now() - startTime;
+                
+                testStats.testCount++;
+                testStats.totalResponseTime += responseTime;
+                
+                if (response.ok) {
+                    testStats.successCount++;
+                    const result = await response.json();
+                    return { success: true, data: result, responseTime };
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                clearTimeout(timeoutId);
+                const responseTime = Date.now() - startTime;
+                testStats.testCount++;
+                testStats.totalResponseTime += responseTime;
+                
+                if (error.name === 'AbortError') {
+                    testStats.timeoutCount++;
+                    return { success: false, error: 'REQUEST_TIMEOUT', responseTime, timeout };
+                } else {
+                    testStats.errors.push(error.message);
+                    return { success: false, error: error.message, responseTime };
+                }
+            }
+        }
+
+        async function testBasicChat() {
+            clearResult('basicChatResult');
+            logResult('basicChatResult', '🚀 开始基础AI聊天测试...', 'info');
+            
+            const testCases = [
+                {
+                    name: '简单数学问题',
+                    data: {
+                        question: '1+1等于多少？',
+                        subject: 'math',
+                        grade: 1,
+                        studentInput: '我不知道',
+                        chatHistory: [],
+                        currentStep: 'understanding'
+                    }
+                },
+                {
+                    name: '语文问题',
+                    data: {
+                        question: '春天有什么特点？',
+                        subject: 'chinese',
+                        grade: 2,
+                        studentInput: '春天很美',
+                        chatHistory: [],
+                        currentStep: 'understanding'
+                    }
+                }
+            ];
+
+            for (const testCase of testCases) {
+                logResult('basicChatResult', `测试：${testCase.name}`, 'info');
+                
+                const result = await makeAIRequest('/api/ai-chat/tutoring', testCase.data);
+                
+                if (result.success) {
+                    logResult('basicChatResult', 
+                        `✅ 成功！响应时间: ${result.responseTime}ms\n回复: ${result.data.data?.aiResponse || 'N/A'}`, 
+                        'success');
+                } else {
+                    logResult('basicChatResult', 
+                        `❌ 失败！错误: ${result.error}, 响应时间: ${result.responseTime}ms`, 
+                        'error');
+                }
+            }
+            
+            updateStats();
+        }
+
+        async function testComplexChat() {
+            clearResult('basicChatResult');
+            logResult('basicChatResult', '🧮 开始复杂问题测试...', 'info');
+            
+            const complexQuestion = {
+                question: '小明有5个苹果，小红有3个苹果，如果小明给小红2个苹果，那么小明和小红各有多少个苹果？请详细说明解题过程。',
+                subject: 'math',
+                grade: 3,
+                studentInput: '我觉得这道题很复杂，不知道怎么开始思考，能给我一些提示吗？老师，这道题涉及到加法和减法，我需要分步骤来解决。',
+                chatHistory: [],
+                currentStep: 'understanding'
+            };
+
+            const result = await makeAIRequest('/api/ai-chat/tutoring', complexQuestion, 8000); // 8秒超时
+            
+            if (result.success) {
+                logResult('basicChatResult', 
+                    `✅ 复杂问题处理成功！响应时间: ${result.responseTime}ms\n回复: ${result.data.data?.aiResponse || 'N/A'}`, 
+                    'success');
+            } else if (result.error === 'REQUEST_TIMEOUT') {
+                logResult('basicChatResult', 
+                    `⏰ 复杂问题超时（${result.timeout}ms），这是正常的，应该触发智能指引`, 
+                    'warning');
+            } else {
+                logResult('basicChatResult', 
+                    `❌ 复杂问题处理失败！错误: ${result.error}`, 
+                    'error');
+            }
+            
+            updateStats();
+        }
+
+        async function testSimpleChat() {
+            clearResult('basicChatResult');
+            logResult('basicChatResult', '⚡ 开始简单问题测试...', 'info');
+            
+            const simpleQuestions = [
+                { input: '是', expected: '快速响应' },
+                { input: '对', expected: '快速响应' },
+                { input: '不是', expected: '快速响应' },
+                { input: '知道了', expected: '快速响应' },
+                { input: '谢谢', expected: '快速响应' }
+            ];
+
+            for (const q of simpleQuestions) {
+                const testData = {
+                    question: '1+1等于2吗？',
+                    subject: 'math',
+                    grade: 1,
+                    studentInput: q.input,
+                    chatHistory: [],
+                    currentStep: 'understanding'
+                };
+
+                const result = await makeAIRequest('/api/ai-chat/tutoring', testData, 3000); // 3秒超时
+                
+                if (result.success) {
+                    const responseTime = result.responseTime;
+                    const speed = responseTime < 2000 ? '⚡快速' : responseTime < 5000 ? '🐌一般' : '🐢较慢';
+                    logResult('basicChatResult', 
+                        `✅ 输入"${q.input}": ${speed} (${responseTime}ms)`, 
+                        'success');
+                } else {
+                    logResult('basicChatResult', 
+                        `❌ 输入"${q.input}": 失败 - ${result.error}`, 
+                        'error');
+                }
+            }
+            
+            updateStats();
+        }
+
+        async function testTimeoutHandling() {
+            clearResult('timeoutResult');
+            logResult('timeoutResult', '⏰ 开始超时处理测试...', 'info');
+            
+            const timeoutMs = parseInt(document.getElementById('timeoutSettings').value);
+            const scenario = document.getElementById('testScenario').value;
+            
+            // 故意使用很短的超时时间来触发超时
+            const testData = {
+                question: '这是一道需要深入思考的复杂数学应用题，涉及多个步骤的计算和逻辑推理，请详细分析解题思路。',
+                subject: 'math',
+                grade: 4,
+                studentInput: '这道题太难了，我完全不知道从哪里开始，老师能帮帮我吗？我需要详细的指导和分步骤的解释。',
+                chatHistory: [],
+                currentStep: 'understanding'
+            };
+
+            logResult('timeoutResult', `设置超时时间: ${timeoutMs}ms`, 'info');
+            logResult('timeoutResult', `测试场景: ${scenario}`, 'info');
+            
+            const result = await makeAIRequest('/api/ai-chat/tutoring', testData, timeoutMs);
+            
+            if (result.success) {
+                logResult('timeoutResult', 
+                    `✅ 请求成功（响应时间: ${result.responseTime}ms）\n这意味着没有触发超时处理`, 
+                    'success');
+            } else if (result.error === 'REQUEST_TIMEOUT') {
+                logResult('timeoutResult', 
+                    `⏰ 成功触发超时！(${result.responseTime}ms > ${timeoutMs}ms)\n✨ 期望行为：小程序应自动提供智能指引而不是显示错误`, 
+                    'warning');
+                
+                // 测试智能指引API
+                setTimeout(() => {
+                    testSmartGuidanceAfterTimeout(testData);
+                }, 1000);
+                
+            } else {
+                logResult('timeoutResult', 
+                    `❌ 其他错误: ${result.error}`, 
+                    'error');
+            }
+            
+            updateStats();
+        }
+
+        async function testSmartGuidanceAfterTimeout(originalData) {
+            logResult('timeoutResult', '\n🧠 测试超时后的智能指引...', 'info');
+            
+            // 测试hint API（应该更快响应）
+            const hintData = {
+                question: originalData.question,
+                context: `学生说: "${originalData.studentInput}", 请提供思路指引`,
+                subject: originalData.subject,
+                grade: originalData.grade
+            };
+
+            const hintResult = await makeAIRequest('/api/ai-chat/hint', hintData, 2000); // 2秒快速超时
+            
+            if (hintResult.success) {
+                logResult('timeoutResult', 
+                    `✅ 智能指引成功！响应时间: ${hintResult.responseTime}ms\n指引内容: ${hintResult.data.data?.hint || 'N/A'}`, 
+                    'success');
+            } else {
+                logResult('timeoutResult', 
+                    `⚠️ 智能指引也超时，应使用本地指引策略`, 
+                    'warning');
+            }
+        }
+
+        async function testRepeatedTimeout() {
+            clearResult('timeoutResult');
+            logResult('timeoutResult', '🔄 开始连续超时测试...', 'info');
+            
+            const shortTimeout = 1000; // 1秒超时，很容易触发
+            
+            for (let i = 1; i <= 3; i++) {
+                logResult('timeoutResult', `第${i}次请求...`, 'info');
+                
+                const testData = {
+                    question: `这是第${i}次复杂的数学问题，需要深入分析和计算。`,
+                    subject: 'math',
+                    grade: 3,
+                    studentInput: `第${i}次尝试，我还是不太理解`,
+                    chatHistory: [],
+                    currentStep: 'understanding'
+                };
+
+                const result = await makeAIRequest('/api/ai-chat/tutoring', testData, shortTimeout);
+                
+                if (result.error === 'REQUEST_TIMEOUT') {
+                    logResult('timeoutResult', 
+                        `⏰ 第${i}次超时 - 应防止重复提醒`, 
+                        'warning');
+                } else if (result.success) {
+                    logResult('timeoutResult', 
+                        `✅ 第${i}次成功 (${result.responseTime}ms)`, 
+                        'success');
+                } else {
+                    logResult('timeoutResult', 
+                        `❌ 第${i}次失败: ${result.error}`, 
+                        'error');
+                }
+                
+                // 间隔1秒
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            logResult('timeoutResult', '\n📊 连续超时测试完成，检查是否有重复的超时提醒', 'info');
+            updateStats();
+        }
+
+        async function testSmartGuidance() {
+            clearResult('timeoutResult');
+            logResult('timeoutResult', '💡 开始智能指引功能测试...', 'info');
+            
+            const guidanceTests = [
+                {
+                    name: '数学加法指引',
+                    data: {
+                        question: '3 + 5 = ?',
+                        context: '学生说: "我不知道怎么算", 请提供思路指引',
+                        subject: 'math',
+                        grade: 1
+                    }
+                },
+                {
+                    name: '复杂应用题指引',
+                    data: {
+                        question: '小明买了3支笔，每支笔2元，他一共花了多少钱？',
+                        context: '学生说: "我看不懂这道题", 请提供思路指引',
+                        subject: 'math',
+                        grade: 2
+                    }
+                }
+            ];
+
+            for (const test of guidanceTests) {
+                logResult('timeoutResult', `测试：${test.name}`, 'info');
+                
+                const result = await makeAIRequest('/api/ai-chat/hint', test.data, 3000);
+                
+                if (result.success) {
+                    logResult('timeoutResult', 
+                        `✅ 指引成功！响应时间: ${result.responseTime}ms\n指引: ${result.data.data?.hint || 'N/A'}`, 
+                        'success');
+                } else {
+                    logResult('timeoutResult', 
+                        `❌ 指引失败: ${result.error}`, 
+                        'error');
+                }
+            }
+            
+            updateStats();
+        }
+
+        async function testNetworkError() {
+            clearResult('networkErrorResult');
+            logResult('networkErrorResult', '🔗 开始网络错误测试...', 'info');
+            
+            // 测试无效URL
+            const invalidTests = [
+                { url: '/api/ai-chat/invalid', name: '无效端点测试' },
+                { url: '/api/nonexistent', name: '不存在的API测试' }
+            ];
+
+            for (const test of invalidTests) {
+                logResult('networkErrorResult', `测试：${test.name}`, 'info');
+                
+                try {
+                    const response = await fetch(`${API_BASE}${test.url}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ test: 'data' })
+                    });
+                    
+                    if (!response.ok) {
+                        logResult('networkErrorResult', 
+                            `✅ 正确处理HTTP错误: ${response.status} ${response.statusText}`, 
+                            'warning');
+                    }
+                } catch (error) {
+                    logResult('networkErrorResult', 
+                        `✅ 正确捕获网络错误: ${error.message}`, 
+                        'warning');
+                }
+            }
+            
+            // 测试错误的服务器地址
+            logResult('networkErrorResult', '测试：错误服务器地址', 'info');
+            try {
+                const response = await fetch('http://192.168.1.999:3000/api/ai-chat/tutoring', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test: 'data' }),
+                    signal: AbortSignal.timeout(2000)
+                });
+            } catch (error) {
+                logResult('networkErrorResult', 
+                    `✅ 正确处理网络连接错误: ${error.message}`, 
+                    'warning');
+            }
+        }
+
+        async function testOfflineGuidance() {
+            clearResult('networkErrorResult');
+            logResult('networkErrorResult', '📱 离线指引功能测试...', 'info');
+            
+            // 这里我们模拟离线指引的逻辑
+            const offlineGuidanceTests = [
+                {
+                    question: '5 + 3 = ?',
+                    expected: '应包含基本加法指引'
+                },
+                {
+                    question: '10 - 4 = ?',
+                    expected: '应包含减法指引'
+                },
+                {
+                    question: '复杂应用题',
+                    expected: '应包含通用解题步骤'
+                }
+            ];
+
+            logResult('networkErrorResult', '📝 离线指引策略测试（前端逻辑）:', 'info');
+            
+            for (const test of offlineGuidanceTests) {
+                // 模拟生成离线指引的逻辑
+                let guidance = generateMockOfflineGuidance(test.question);
+                
+                logResult('networkErrorResult', 
+                    `题目: "${test.question}"\n指引: ${guidance}\n`, 
+                    'success');
+            }
+        }
+
+        function generateMockOfflineGuidance(question) {
+            let guidance = '📱 网络暂时不稳定，使用离线指引：\n\n';
+            
+            if (question.includes('+') || question.includes('加')) {
+                guidance += '🔢 这是加法题：\n• 找出两个要相加的数\n• 可以用手指帮助计算\n• 从较大的数开始数起';
+            } else if (question.includes('-') || question.includes('减')) {
+                guidance += '➖ 这是减法题：\n• 找出被减数和减数\n• 想象从一堆东西里拿走一些';
+            } else {
+                guidance += '📚 通用解题步骤：\n• 仔细读题\n• 找出已知和未知\n• 选择合适方法\n• 动手计算\n• 检查答案';
+            }
+            
+            return guidance;
+        }
+
+        async function testConcurrentRequests() {
+            clearResult('stressTestResult');
+            logResult('stressTestResult', '🚀 开始并发请求测试...', 'info');
+            
+            const concurrentCount = 5;
+            const promises = [];
+            
+            for (let i = 0; i < concurrentCount; i++) {
+                const testData = {
+                    question: `并发测试题目 ${i+1}`,
+                    subject: 'math',
+                    grade: 1,
+                    studentInput: `并发请求 ${i+1}`,
+                    chatHistory: [],
+                    currentStep: 'understanding'
+                };
+                
+                promises.push(makeAIRequest('/api/ai-chat/tutoring', testData, 10000));
+            }
+            
+            const startTime = Date.now();
+            const results = await Promise.allSettled(promises);
+            const totalTime = Date.now() - startTime;
+            
+            let successCount = 0;
+            let failureCount = 0;
+            
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled' && result.value.success) {
+                    successCount++;
+                    logResult('stressTestResult', 
+                        `✅ 并发请求 ${index+1}: 成功 (${result.value.responseTime}ms)`, 
+                        'success');
+                } else {
+                    failureCount++;
+                    const error = result.status === 'fulfilled' ? result.value.error : result.reason;
+                    logResult('stressTestResult', 
+                        `❌ 并发请求 ${index+1}: 失败 - ${error}`, 
+                        'error');
+                }
+            });
+            
+            logResult('stressTestResult', 
+                `\n📊 并发测试结果：\n成功: ${successCount}/${concurrentCount}\n失败: ${failureCount}/${concurrentCount}\n总耗时: ${totalTime}ms`, 
+                'info');
+            
+            updateStats();
+        }
+
+        async function testHighFrequency() {
+            clearResult('stressTestResult');
+            logResult('stressTestResult', '⚡ 开始高频请求测试...', 'info');
+            
+            const requestCount = 10;
+            const interval = 500; // 500ms间隔
+            
+            for (let i = 0; i < requestCount; i++) {
+                const testData = {
+                    question: `高频测试 ${i+1}`,
+                    subject: 'math',
+                    grade: 1,
+                    studentInput: `高频请求 ${i+1}`,
+                    chatHistory: [],
+                    currentStep: 'understanding'
+                };
+                
+                logResult('stressTestResult', `发送第 ${i+1} 个请求...`, 'info');
+                
+                const result = await makeAIRequest('/api/ai-chat/tutoring', testData, 5000);
+                
+                if (result.success) {
+                    logResult('stressTestResult', 
+                        `✅ 请求 ${i+1}: 成功 (${result.responseTime}ms)`, 
+                        'success');
+                } else {
+                    logResult('stressTestResult', 
+                        `❌ 请求 ${i+1}: 失败 - ${result.error}`, 
+                        'error');
+                }
+                
+                // 等待间隔
+                if (i < requestCount - 1) {
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                }
+            }
+            
+            logResult('stressTestResult', '\n📊 高频测试完成', 'info');
+            updateStats();
+        }
+
+        function clearStats() {
+            testStats = {
+                testCount: 0,
+                successCount: 0,
+                timeoutCount: 0,
+                totalResponseTime: 0,
+                errors: []
+            };
+            updateStats();
+            
+            // 清除所有结果区域
+            ['basicChatResult', 'timeoutResult', 'networkErrorResult', 'stressTestResult'].forEach(id => {
+                clearResult(id);
+            });
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStats();
+            
+            // 添加一些说明信息
+            logResult('basicChatResult', '准备进行AI聊天基础功能测试...', 'info');
+            logResult('timeoutResult', '准备进行超时处理测试...', 'info');
+            logResult('networkErrorResult', '准备进行网络异常处理测试...', 'info');
+            logResult('stressTestResult', '准备进行压力测试...', 'info');
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 AI服务验证测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .test-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .info { background: #e2e3ff; border: 1px solid #b8b9ff; color: #0c5460; }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-real { background: #28a745; }
+        .status-mock { background: #dc3545; }
+        .status-unknown { background: #ffc107; }
+        .input-section {
+            margin: 15px 0;
+        }
+        .input-section input, .input-section textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        .verification-items {
+            margin: 15px 0;
+        }
+        .verification-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #ddd;
+        }
+        .verification-item.pass {
+            border-left-color: #28a745;
+            background: #f8fff9;
+        }
+        .verification-item.fail {
+            border-left-color: #dc3545;
+            background: #fff8f8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI服务真实性验证</h1>
+            <p>验证AI答疑服务是否使用真实的大语言模型</p>
+            <div id="overallStatus">
+                <span class="status-indicator status-unknown"></span>
+                <span>检测中...</span>
+            </div>
+        </div>
+
+        <!-- 配置检查 -->
+        <div class="test-section">
+            <h3>🔧 1. 配置检查</h3>
+            <button class="test-button" onclick="checkConfiguration()">检查API配置</button>
+            <div id="configResult" class="result"></div>
+        </div>
+
+        <!-- AI模型调用测试 -->
+        <div class="test-section">
+            <h3>🎯 2. AI模型调用测试</h3>
+            <button class="test-button" onclick="testAIResponse()">测试真实AI响应</button>
+            <button class="test-button" onclick="testComplexMath()">测试复杂数学题</button>
+            <button class="test-button" onclick="testCreativeTask()">测试创造性任务</button>
+            <div id="aiTestResult" class="result"></div>
+        </div>
+
+        <!-- 答疑功能测试 -->
+        <div class="test-section">
+            <h3>💬 3. 答疑功能测试</h3>
+            <div class="input-section">
+                <input type="text" id="testQuestion" placeholder="输入测试题目" value="3 + 5 = ?">
+                <input type="text" id="testInput" placeholder="输入学生回答" value="我不知道怎么算">
+            </div>
+            <button class="test-button" onclick="testTutoring()">测试AI答疑</button>
+            <button class="test-button" onclick="testHint()">测试智能提示</button>
+            <button class="test-button" onclick="testAnswerCheck()">测试答案检查</button>
+            <div id="tutoringResult" class="result"></div>
+        </div>
+
+        <!-- 验证结果 -->
+        <div class="test-section">
+            <h3>✅ 4. 真实性验证结果</h3>
+            <div id="verificationResults" class="verification-items">
+                <div class="verification-item" id="verify-api">
+                    <span class="status-indicator status-unknown"></span>
+                    <span>API密钥配置检查</span>
+                </div>
+                <div class="verification-item" id="verify-response">
+                    <span class="status-indicator status-unknown"></span>
+                    <span>真实AI响应检查</span>
+                </div>
+                <div class="verification-item" id="verify-complexity">
+                    <span class="status-indicator status-unknown"></span>
+                    <span>复杂推理能力检查</span>
+                </div>
+                <div class="verification-item" id="verify-tutoring">
+                    <span class="status-indicator status-unknown"></span>
+                    <span>答疑功能真实性检查</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 修复建议 -->
+        <div class="test-section" id="fixSuggestions" style="display: none;">
+            <h3>🔧 修复建议</h3>
+            <div id="suggestions"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://192.168.31.180:3000/api';
+        let verificationResults = {};
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(API_BASE + url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                throw new Error(`请求失败: ${error.message}`);
+            }
+        }
+
+        function updateResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = content;
+            element.className = `result ${type}`;
+        }
+
+        function updateVerification(itemId, passed, message) {
+            const item = document.getElementById(itemId);
+            const indicator = item.querySelector('.status-indicator');
+            const text = item.querySelector('span:last-child');
+            
+            indicator.className = `status-indicator ${passed ? 'status-real' : 'status-mock'}`;
+            text.textContent = message;
+            item.className = `verification-item ${passed ? 'pass' : 'fail'}`;
+            
+            verificationResults[itemId] = passed;
+            updateOverallStatus();
+        }
+
+        function updateOverallStatus() {
+            const passed = Object.values(verificationResults).filter(v => v).length;
+            const total = Object.keys(verificationResults).length;
+            const statusEl = document.getElementById('overallStatus');
+            
+            if (total === 0) return;
+            
+            if (passed === total) {
+                statusEl.innerHTML = '<span class="status-indicator status-real"></span><span>✅ AI服务使用真实模型</span>';
+            } else if (passed > 0) {
+                statusEl.innerHTML = '<span class="status-indicator status-unknown"></span><span>⚠️ 部分功能使用模拟数据</span>';
+                showFixSuggestions();
+            } else {
+                statusEl.innerHTML = '<span class="status-indicator status-mock"></span><span>❌ AI服务使用模拟数据</span>';
+                showFixSuggestions();
+            }
+        }
+
+        function showFixSuggestions() {
+            const suggestionsEl = document.getElementById('suggestions');
+            const fixSection = document.getElementById('fixSuggestions');
+            
+            let suggestions = [];
+            
+            if (!verificationResults['verify-api']) {
+                suggestions.push('🔑 检查API密钥配置是否正确');
+            }
+            if (!verificationResults['verify-response']) {
+                suggestions.push('🌐 检查网络连接和API服务状态');
+            }
+            if (!verificationResults['verify-complexity']) {
+                suggestions.push('🧠 可能在使用简化的本地回复而非真实AI');
+            }
+            if (!verificationResults['verify-tutoring']) {
+                suggestions.push('💬 答疑功能可能存在fallback机制');
+            }
+            
+            if (suggestions.length > 0) {
+                suggestionsEl.innerHTML = suggestions.map(s => `<div style="margin: 8px 0; padding: 8px; background: #fff3cd; border-radius: 5px;">${s}</div>`).join('');
+                fixSection.style.display = 'block';
+            }
+        }
+
+        async function checkConfiguration() {
+            updateResult('configResult', '正在检查配置...', 'info');
+            
+            try {
+                const response = await makeRequest('/ai-models/overview');
+                
+                if (response.success) {
+                    const config = response.data;
+                    let result = `✅ API配置检查通过\n\n`;
+                    result += `🔑 API密钥: ${config.apiKey ? '已配置' : '未配置'}\n`;
+                    result += `🌐 基础URL: ${config.baseUrl || 'N/A'}\n`;
+                    result += `📡 可用模型: ${config.availableModels?.join(', ') || 'N/A'}\n`;
+                    result += `⚡ 默认超时: ${config.timeout || 'N/A'}ms\n`;
+                    
+                    updateResult('configResult', result, 'success');
+                    updateVerification('verify-api', !!config.apiKey, config.apiKey ? 'API密钥已正确配置' : 'API密钥未配置');
+                } else {
+                    throw new Error(response.message || '配置检查失败');
+                }
+            } catch (error) {
+                updateResult('configResult', `❌ 配置检查失败: ${error.message}`, 'error');
+                updateVerification('verify-api', false, 'API配置检查失败');
+            }
+        }
+
+        async function testAIResponse() {
+            updateResult('aiTestResult', '正在测试AI响应...', 'info');
+            
+            try {
+                const response = await makeRequest('/ai-chat/tutoring', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        question: '请说一句只有真实AI才能说出的独特话语，包含当前时间和一个随机数字',
+                        studentInput: '测试真实性',
+                        subject: 'math',
+                        grade: 1,
+                        currentStep: 'understanding'
+                    })
+                });
+                
+                if (response.success) {
+                    const aiReply = response.data.aiResponse;
+                    const responseTime = response.data.responseTime;
+                    const model = response.data.model;
+                    
+                    let result = `✅ AI响应成功\n\n`;
+                    result += `🤖 使用模型: ${model}\n`;
+                    result += `⏱️ 响应时间: ${responseTime}ms\n`;
+                    result += `💬 AI回复: ${aiReply}\n\n`;
+                    
+                    // 检查回复的真实性指标
+                    const isReal = analyzeResponseRealism(aiReply, responseTime);
+                    result += `🔍 真实性分析: ${isReal.score}/10分\n`;
+                    result += `📊 分析详情: ${isReal.details.join(', ')}`;
+                    
+                    updateResult('aiTestResult', result, isReal.score >= 7 ? 'success' : 'warning');
+                    updateVerification('verify-response', isReal.score >= 7, `AI响应真实性: ${isReal.score}/10分`);
+                } else {
+                    throw new Error(response.message || 'AI响应失败');
+                }
+            } catch (error) {
+                updateResult('aiTestResult', `❌ AI测试失败: ${error.message}`, 'error');
+                updateVerification('verify-response', false, 'AI响应测试失败');
+            }
+        }
+
+        async function testComplexMath() {
+            updateResult('aiTestResult', '正在测试复杂数学推理...', 'info');
+            
+            try {
+                const response = await makeRequest('/ai-chat/tutoring', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        question: '如果一个正方形的面积是64平方厘米，那么它的周长是多少厘米？请一步步推理。',
+                        studentInput: '我需要详细的解题思路',
+                        subject: 'math',
+                        grade: 4,
+                        currentStep: 'understanding'
+                    })
+                });
+                
+                if (response.success) {
+                    const aiReply = response.data.aiResponse;
+                    const complexity = analyzeComplexity(aiReply);
+                    
+                    let result = `🧮 复杂数学测试结果\n\n`;
+                    result += `💬 AI回复: ${aiReply}\n\n`;
+                    result += `🧠 复杂度分析: ${complexity.score}/10分\n`;
+                    result += `📝 包含推理: ${complexity.hasReasoning ? '是' : '否'}\n`;
+                    result += `🔢 包含计算: ${complexity.hasMath ? '是' : '否'}\n`;
+                    result += `📚 包含概念: ${complexity.hasConcepts ? '是' : '否'}`;
+                    
+                    updateResult('aiTestResult', result, complexity.score >= 6 ? 'success' : 'warning');
+                    updateVerification('verify-complexity', complexity.score >= 6, `复杂推理能力: ${complexity.score}/10分`);
+                } else {
+                    throw new Error(response.message || '复杂数学测试失败');
+                }
+            } catch (error) {
+                updateResult('aiTestResult', `❌ 复杂数学测试失败: ${error.message}`, 'error');
+                updateVerification('verify-complexity', false, '复杂推理测试失败');
+            }
+        }
+
+        async function testCreativeTask() {
+            updateResult('aiTestResult', '正在测试创造性任务...', 'info');
+            
+            try {
+                const response = await makeRequest('/ai-chat/tutoring', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        question: '请用一个有趣的故事来解释为什么1+1=2',
+                        studentInput: '我想听故事',
+                        subject: 'math',
+                        grade: 1,
+                        currentStep: 'understanding'
+                    })
+                });
+                
+                if (response.success) {
+                    const aiReply = response.data.aiResponse;
+                    const creativity = analyzeCreativity(aiReply);
+                    
+                    let result = `🎨 创造性任务测试结果\n\n`;
+                    result += `💬 AI回复: ${aiReply}\n\n`;
+                    result += `✨ 创造性分析: ${creativity.score}/10分\n`;
+                    result += `📖 包含故事: ${creativity.hasStory ? '是' : '否'}\n`;
+                    result += `🎭 生动描述: ${creativity.isVivid ? '是' : '否'}\n`;
+                    result += `🔄 原创内容: ${creativity.isOriginal ? '是' : '否'}`;
+                    
+                    updateResult('aiTestResult', result, creativity.score >= 6 ? 'success' : 'warning');
+                } else {
+                    throw new Error(response.message || '创造性测试失败');
+                }
+            } catch (error) {
+                updateResult('aiTestResult', `❌ 创造性测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testTutoring() {
+            updateResult('tutoringResult', '正在测试答疑功能...', 'info');
+            
+            const question = document.getElementById('testQuestion').value;
+            const studentInput = document.getElementById('testInput').value;
+            
+            try {
+                const response = await makeRequest('/ai-chat/tutoring', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        question,
+                        studentInput,
+                        subject: 'math',
+                        grade: 1,
+                        currentStep: 'understanding'
+                    })
+                });
+                
+                if (response.success) {
+                    const data = response.data;
+                    let result = `💬 答疑测试成功\n\n`;
+                    result += `🤖 模型: ${data.model}\n`;
+                    result += `⏱️ 响应时间: ${data.responseTime}ms\n`;
+                    result += `📝 AI回复: ${data.aiResponse}\n`;
+                    result += `📊 响应类型: ${data.responseType}\n`;
+                    result += `🎯 当前步骤: ${data.currentStep}`;
+                    
+                    const isRealTutoring = analyzeTutoringRealism(data.aiResponse, data.responseTime);
+                    result += `\n\n🔍 答疑真实性: ${isRealTutoring.score}/10分`;
+                    
+                    updateResult('tutoringResult', result, isRealTutoring.score >= 7 ? 'success' : 'warning');
+                    updateVerification('verify-tutoring', isRealTutoring.score >= 7, `答疑功能真实性: ${isRealTutoring.score}/10分`);
+                } else {
+                    throw new Error(response.message || '答疑测试失败');
+                }
+            } catch (error) {
+                updateResult('tutoringResult', `❌ 答疑测试失败: ${error.message}`, 'error');
+                updateVerification('verify-tutoring', false, '答疑功能测试失败');
+            }
+        }
+
+        async function testHint() {
+            const question = document.getElementById('testQuestion').value;
+            
+            try {
+                const response = await makeRequest('/ai-chat/hint', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        question,
+                        context: '学生需要解题提示',
+                        subject: 'math',
+                        grade: 1
+                    })
+                });
+                
+                if (response.success) {
+                    let result = document.getElementById('tutoringResult').textContent + '\n\n';
+                    result += `💡 智能提示测试:\n`;
+                    result += `提示内容: ${response.data.hint}\n`;
+                    result += `响应时间: ${response.data.responseTime}ms`;
+                    
+                    updateResult('tutoringResult', result, 'success');
+                } else {
+                    throw new Error(response.message || '提示测试失败');
+                }
+            } catch (error) {
+                updateResult('tutoringResult', `❌ 提示测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAnswerCheck() {
+            const question = document.getElementById('testQuestion').value;
+            
+            try {
+                const response = await makeRequest('/ai-chat/check-answer', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        question,
+                        studentAnswer: '8',
+                        subject: 'math',
+                        grade: 1
+                    })
+                });
+                
+                if (response.success) {
+                    let result = document.getElementById('tutoringResult').textContent + '\n\n';
+                    result += `✅ 答案检查测试:\n`;
+                    result += `是否正确: ${response.data.isCorrect}\n`;
+                    result += `反馈: ${response.data.feedback}\n`;
+                    result += `响应时间: ${response.data.responseTime}ms`;
+                    
+                    updateResult('tutoringResult', result, 'success');
+                } else {
+                    throw new Error(response.message || '答案检查失败');
+                }
+            } catch (error) {
+                updateResult('tutoringResult', `❌ 答案检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        function analyzeResponseRealism(reply, responseTime) {
+            let score = 0;
+            let details = [];
+            
+            // 响应时间分析 (真实AI通常在500-3000ms)
+            if (responseTime >= 500 && responseTime <= 3000) {
+                score += 3;
+                details.push('响应时间正常');
+            } else if (responseTime < 500) {
+                score += 1;
+                details.push('响应过快可能是缓存');
+            } else {
+                score += 2;
+                details.push('响应较慢但可能是真实AI');
+            }
+            
+            // 内容复杂度分析
+            if (reply.length > 50) {
+                score += 2;
+                details.push('回复长度适中');
+            }
+            
+            // 是否包含随机元素
+            if (reply.includes('随机') || reply.includes('时间') || /\d+/.test(reply)) {
+                score += 2;
+                details.push('包含随机或时间元素');
+            }
+            
+            // 语言自然度
+            if (!reply.includes('示例') && !reply.includes('模拟')) {
+                score += 2;
+                details.push('语言自然');
+            }
+            
+            // 教学专业性
+            if (reply.includes('emoji') || reply.length < 200) {
+                score += 1;
+                details.push('符合教学要求');
+            }
+            
+            return { score: Math.min(score, 10), details };
+        }
+
+        function analyzeComplexity(reply) {
+            let score = 0;
+            
+            const hasReasoning = reply.includes('因为') || reply.includes('所以') || reply.includes('步骤') || reply.includes('首先');
+            const hasMath = /\d+/.test(reply) && (reply.includes('=') || reply.includes('×') || reply.includes('÷'));
+            const hasConcepts = reply.includes('平方') || reply.includes('周长') || reply.includes('面积');
+            
+            if (hasReasoning) score += 3;
+            if (hasMath) score += 3;
+            if (hasConcepts) score += 2;
+            if (reply.length > 100) score += 2;
+            
+            return { score, hasReasoning, hasMath, hasConcepts };
+        }
+
+        function analyzeCreativity(reply) {
+            let score = 0;
+            
+            const hasStory = reply.includes('故事') || reply.includes('从前') || reply.includes('小明') || reply.includes('小红');
+            const isVivid = reply.length > 80 && (reply.includes('想象') || reply.includes('比如'));
+            const isOriginal = !reply.includes('示例') && !reply.includes('模板');
+            
+            if (hasStory) score += 4;
+            if (isVivid) score += 3;
+            if (isOriginal) score += 3;
+            
+            return { score, hasStory, isVivid, isOriginal };
+        }
+
+        function analyzeTutoringRealism(reply, responseTime) {
+            let score = 0;
+            
+            // 响应时间合理性
+            if (responseTime >= 300 && responseTime <= 2000) score += 3;
+            
+            // 教学专业性
+            if (reply.length < 100 && reply.includes('emoji')) score += 2;
+            
+            // 引导性语言
+            if (reply.includes('想想') || reply.includes('试试') || reply.includes('你觉得')) score += 2;
+            
+            // 不直接给答案
+            if (!reply.includes('答案是') && !reply.includes('等于')) score += 2;
+            
+            // 鼓励性语言
+            if (reply.includes('很好') || reply.includes('加油') || reply.includes('棒')) score += 1;
+            
+            return { score };
+        }
+
+        // 页面加载时自动开始检查
+        window.onload = function() {
+            setTimeout(() => {
+                checkConfiguration();
+            }, 1000);
+        };
+    </script>
+</body>
+</html> 

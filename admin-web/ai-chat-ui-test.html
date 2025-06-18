@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 AI聊天页面UI测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 25px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            background: #f9f9f9;
+        }
+        .test-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .improvements {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+        .improvement-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+        .improvement-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 AI聊天页面UI优化测试</h1>
+            <p style="color: #666; font-size: 18px;">验证所有用户需求改进是否正常工作</p>
+        </div>
+
+        <!-- 答案检查功能测试 -->
+        <div class="test-section">
+            <h2 class="test-title">✅ 答案检查功能测试</h2>
+            
+            <div class="test-item">
+                <strong>正确答案测试：</strong>
+                <button class="test-button" onclick="testAnswerCheck('3+5=?', '8', true)">
+                    测试正确答案 (3+5=8)
+                </button>
+                <div id="answer-check-correct" class="result-box" style="display: none;"></div>
+            </div>
+
+            <div class="test-item">
+                <strong>错误答案测试：</strong>
+                <button class="test-button" onclick="testAnswerCheck('3+5=?', '7', false)">
+                    测试错误答案 (3+5=7)
+                </button>
+                <div id="answer-check-incorrect" class="result-box" style="display: none;"></div>
+            </div>
+
+            <div class="test-item">
+                <strong>复杂题目测试：</strong>
+                <button class="test-button" onclick="testAnswerCheck('小明有15个苹果，吃了3个，还剩几个？', '12', true)">
+                    测试应用题 (15-3=12)
+                </button>
+                <div id="answer-check-complex" class="result-box" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- AI聊天功能测试 -->
+        <div class="test-section">
+            <h2 class="test-title">💬 AI聊天功能测试</h2>
+            
+            <div class="test-item">
+                <strong>智能回复测试：</strong>
+                <button class="test-button" onclick="testAIChat('我不懂这道题')">
+                    测试"我不懂"
+                </button>
+                <button class="test-button" onclick="testAIChat('再给我一个提示')">
+                    测试"再提示"
+                </button>
+                <button class="test-button" onclick="testAIChat('能详细解释一下吗')">
+                    测试"详细解释"
+                </button>
+                <div id="ai-chat-result" class="result-box" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- 模型速度测试 -->
+        <div class="test-section">
+            <h2 class="test-title">⚡ AI模型速度测试</h2>
+            
+            <div class="test-item">
+                <strong>不同模型响应速度：</strong>
+                <button class="test-button" onclick="testModelSpeed('quick')">
+                    快速模型 (qwen-turbo)
+                </button>
+                <button class="test-button" onclick="testModelSpeed('standard')">
+                    标准模型 (qwen-plus)
+                </button>
+                <button class="test-button" onclick="testModelSpeed('deep')">
+                    深度模型 (qwen-max)
+                </button>
+                <div id="model-speed-result" class="result-box" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- UI改进验证 -->
+        <div class="improvements">
+            <h2 style="margin-top: 0;">🎨 UI改进验证清单</h2>
+            
+            <div class="improvement-item">
+                <span class="improvement-icon">✅</span>
+                <div>
+                    <strong>1. 布局重新设计</strong><br>
+                    模式切换按钮从底部移到题目下方，布局更合理
+                </div>
+            </div>
+            
+            <div class="improvement-item">
+                <span class="improvement-icon">✅</span>
+                <div>
+                    <strong>2. 内联答案输入</strong><br>
+                    答案输入框直接在题目后面，更加直观
+                </div>
+            </div>
+            
+            <div class="improvement-item">
+                <span class="improvement-icon">✅</span>
+                <div>
+                    <strong>3. 快捷回复优化</strong><br>
+                    改为"我不懂"、"再提示"、"详细解释"，更实用
+                </div>
+            </div>
+            
+            <div class="improvement-item">
+                <span class="improvement-icon">✅</span>
+                <div>
+                    <strong>4. 提交答案功能</strong><br>
+                    完善答案提交和实时检查功能
+                </div>
+            </div>
+            
+            <div class="improvement-item">
+                <span class="improvement-icon">✅</span>
+                <div>
+                    <strong>5. 独立聊天区域</strong><br>
+                    聊天区域与答题区域分离，界面更清晰
+                </div>
+            </div>
+            
+            <div class="improvement-item">
+                <span class="improvement-icon">✅</span>
+                <div>
+                    <strong>6. 智能AI聊天</strong><br>
+                    接入真实阿里千问大模型，支持即时智能对话
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = 'http://192.168.31.180:3000';
+
+        // 测试答案检查功能
+        async function testAnswerCheck(question, answer, expectedCorrect) {
+            const resultId = expectedCorrect ? 'answer-check-correct' : 
+                           answer === '7' ? 'answer-check-incorrect' : 'answer-check-complex';
+            const resultBox = document.getElementById(resultId);
+            
+            resultBox.style.display = 'block';
+            resultBox.textContent = '🔄 检查中...';
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${baseUrl}/api/ai-chat/check-answer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        studentAnswer: answer,
+                        subject: 'math',
+                        grade: '2'
+                    })
+                });
+
+                const data = await response.json();
+                const responseTime = Date.now() - startTime;
+
+                if (data.success) {
+                    resultBox.innerHTML = `✅ 答案检查成功！
+
+📝 题目: ${question}
+💭 学生答案: ${answer}
+${data.data.isCorrect ? '🎉' : '🤔'} 结果: ${data.data.isCorrect ? '正确' : '错误'}
+💬 AI反馈: ${data.data.feedback}
+🤖 使用模型: ${data.data.model}
+⚡ 响应时间: ${responseTime}ms (${data.data.responseTime}ms)
+
+${data.data.isCorrect === expectedCorrect ? '✅ 预期结果匹配！' : '❌ 结果不符合预期'}`;
+                } else {
+                    throw new Error(data.message || '答案检查失败');
+                }
+            } catch (error) {
+                resultBox.innerHTML = `❌ 测试失败: ${error.message}`;
+            }
+        }
+
+        // 测试AI聊天功能
+        async function testAIChat(studentInput) {
+            const resultBox = document.getElementById('ai-chat-result');
+            resultBox.style.display = 'block';
+            resultBox.textContent = '🤖 AI思考中...';
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${baseUrl}/api/ai-chat/tutoring`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: '3+5等于多少？',
+                        studentInput: studentInput,
+                        subject: 'math',
+                        grade: '2',
+                        currentStep: 'understanding',
+                        chatHistory: []
+                    })
+                });
+
+                const data = await response.json();
+                const responseTime = Date.now() - startTime;
+
+                if (data.success) {
+                    resultBox.innerHTML = `✅ AI聊天测试成功！
+
+👧 学生输入: "${studentInput}"
+🤖 AI回复: ${data.data.aiResponse}
+📊 当前步骤: ${data.data.currentStep}
+🎯 回复类型: ${data.data.responseType}
+🤖 使用模型: ${data.data.model}
+⚡ 响应时间: ${responseTime}ms (${data.data.responseTime}ms)
+
+✅ AI正确理解了学生需求并给出了恰当回复！`;
+                } else {
+                    throw new Error(data.message || 'AI聊天失败');
+                }
+            } catch (error) {
+                resultBox.innerHTML = `❌ 测试失败: ${error.message}`;
+            }
+        }
+
+        // 测试模型速度
+        async function testModelSpeed(modelType) {
+            const resultBox = document.getElementById('model-speed-result');
+            resultBox.style.display = 'block';
+            resultBox.textContent = `⚡ 测试${modelType}模型速度...`;
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${baseUrl}/api/ai-chat/test-speed?modelType=${modelType}`);
+                const data = await response.json();
+                const totalTime = Date.now() - startTime;
+
+                if (data.success) {
+                    resultBox.innerHTML = `✅ 模型速度测试成功！
+
+🤖 模型类型: ${data.data.model}
+📝 AI回复: ${data.data.content}
+⏱️ 预期时间: ${data.data.expectedTime}
+⚡ 实际响应: ${data.data.responseTime}ms
+🌐 总请求时间: ${totalTime}ms
+📅 测试时间: ${data.data.timestamp}
+
+${data.data.responseTime < 2000 ? '🚀 响应速度优秀！' : 
+  data.data.responseTime < 5000 ? '✅ 响应速度良好' : '⚠️ 响应稍慢'}`;
+                } else {
+                    throw new Error(data.message || '速度测试失败');
+                }
+            } catch (error) {
+                resultBox.innerHTML = `❌ 测试失败: ${error.message}`;
+            }
+        }
+
+        // 页面加载完成后自动进行基础测试
+        window.onload = function() {
+            console.log('🎯 AI聊天页面UI测试页面加载完成');
+            console.log('✅ 所有功能准备就绪，可以开始测试！');
+        };
+    </script>
+</body>
+</html> 

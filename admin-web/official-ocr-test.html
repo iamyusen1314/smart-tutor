@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 官方OCR模型测试 - qwen-vl-ocr-latest</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .official-config {
+            background: #f8f9fa;
+            padding: 25px;
+            border-left: 5px solid #28a745;
+            margin: 20px;
+            border-radius: 10px;
+        }
+
+        .official-config h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .config-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .config-label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .config-value {
+            color: #007bff;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.95rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .drop-zone {
+            border: 3px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 60px 30px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #007bff;
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+
+        .drop-zone.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .drop-zone-content {
+            pointer-events: none;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone:hover .upload-icon {
+            color: #007bff;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #495057;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin: 20px 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            min-width: 150px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,123,255,0.3);
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+
+        .results h3 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+
+        .ocr-result {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #28a745;
+        }
+
+        .text-line {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #e9f7ef;
+            border-radius: 5px;
+            border-left: 3px solid #28a745;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #dc3545;
+            margin: 20px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #28a745;
+            margin: 20px 0;
+        }
+
+        .json-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #007bff;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .badge.success {
+            background: #28a745;
+        }
+
+        .badge.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 官方OCR模型测试</h1>
+            <p>基于阿里云DashScope qwen-vl-ocr-latest 的专业OCR识别测试</p>
+        </div>
+
+        <!-- 官方配置显示 -->
+        <div class="official-config">
+            <h3>
+                ✅ 官方配置参数
+                <span class="badge success">已启用</span>
+            </h3>
+            <div class="config-grid">
+                <div class="config-item">
+                    <div class="config-label">OCR 模型</div>
+                    <div class="config-value">qwen-vl-ocr-latest</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">最大像素</div>
+                    <div class="config-value">6,422,528 (6.4M)</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">最小像素</div>
+                    <div class="config-value">3,136</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">自动旋转</div>
+                    <div class="config-value">enable_rotate: true</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">OCR 任务</div>
+                    <div class="config-value">key_information_extraction</div>
+                </div>
+                <div class="config-item">
+                    <div class="config-label">结果架构</div>
+                    <div class="config-value">题目内容+类型+学科+年级</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="upload-section">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">拖拽图片到这里或点击上传</div>
+                        <div class="upload-hint">支持 JPEG, PNG, WebP 格式，最大 10MB</div>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                </div>
+                
+                <div id="imagePreview" style="display: none;">
+                    <img id="previewImg" class="image-preview" alt="预览图片">
+                    <div>
+                        <button class="btn" onclick="recognizeImage()">🔍 开始官方OCR识别</button>
+                        <button class="btn" onclick="clearImage()" style="background: #6c757d;">🗑️ 清除图片</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在使用官方OCR模型识别中...</p>
+                <p style="font-size: 0.9rem; color: #6c757d; margin-top: 10px;">
+                    模型: qwen-vl-ocr-latest | 最大像素: 6.4M | 自动旋转: 开启
+                </p>
+            </div>
+
+            <div id="results" class="results" style="display: none;">
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('recognized')">📝 识别结果</button>
+                    <button class="tab" onclick="showTab('stats')">📊 统计信息</button>
+                    <button class="tab" onclick="showTab('raw')">🔧 原始数据</button>
+                </div>
+
+                <div id="recognizedTab" class="tab-content active">
+                    <h3>OCR 识别文本</h3>
+                    <div id="ocrResult" class="ocr-result"></div>
+                </div>
+
+                <div id="statsTab" class="tab-content">
+                    <h3>处理统计</h3>
+                    <div id="statsInfo" class="stats"></div>
+                </div>
+
+                <div id="rawTab" class="tab-content">
+                    <h3>API 原始响应</h3>
+                    <div id="rawResponse" class="json-display"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentImageData = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDropZone();
+            console.log('🚀 官方OCR测试页面初始化完成');
+        });
+
+        function initializeDropZone() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            // 点击上传
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // 文件选择
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            // 拖拽功能
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+        }
+
+        function handleFile(file) {
+            console.log('📁 处理文件:', file.name, '大小:', Math.round(file.size / 1024), 'KB');
+            
+            // 检查文件类型
+            if (!file.type.startsWith('image/')) {
+                showError('请选择图片文件！');
+                return;
+            }
+
+            // 检查文件大小
+            if (file.size > 10 * 1024 * 1024) {
+                showError('文件大小不能超过 10MB！');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentImageData = e.target.result.split(',')[1]; // 移除 data:image/...;base64, 前缀
+                showImagePreview(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showImagePreview(imageSrc) {
+            const previewSection = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            
+            previewImg.src = imageSrc;
+            previewSection.style.display = 'block';
+            
+            // 隐藏上传区域
+            document.getElementById('dropZone').style.display = 'none';
+            
+            console.log('🖼️ 图片预览显示完成');
+        }
+
+        function clearImage() {
+            currentImageData = null;
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('dropZone').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            console.log('🗑️ 图片已清除');
+        }
+
+        async function recognizeImage() {
+            if (!currentImageData) {
+                showError('请先选择图片！');
+                return;
+            }
+
+            console.log('🚀 开始官方OCR识别...');
+            showLoading(true);
+            hideResults();
+
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch('http://localhost:3000/api/ocr/recognize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        imageData: currentImageData,
+                        format: 'base64'
+                    })
+                });
+
+                const responseTime = Date.now() - startTime;
+                console.log(`⚡ API响应时间: ${responseTime}ms`);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('✅ OCR识别完成:', result);
+                
+                showResults(result, responseTime);
+                
+            } catch (error) {
+                console.error('❌ OCR识别失败:', error);
+                showError(`识别失败: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function hideResults() {
+            document.getElementById('results').style.display = 'none';
+        }
+
+        function showResults(result, responseTime) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (result.success) {
+                // 显示识别结果
+                showRecognizedText(result.data.ocrText);
+                showStats(result.data, responseTime);
+                showRawResponse(result);
+                
+                resultsDiv.style.display = 'block';
+                showSuccess(`识别成功！用时 ${responseTime}ms`);
+            } else {
+                showError(`识别失败: ${result.error}`);
+            }
+        }
+
+        function showRecognizedText(ocrText) {
+            const resultDiv = document.getElementById('ocrResult');
+            
+            if (Array.isArray(ocrText) && ocrText.length > 0) {
+                resultDiv.innerHTML = `
+                    <h4>📝 识别到 ${ocrText.length} 行文字：</h4>
+                    ${ocrText.map((line, index) => 
+                        `<div class="text-line">${index + 1}. ${line}</div>`
+                    ).join('')}
+                `;
+            } else {
+                resultDiv.innerHTML = '<p style="color: #6c757d;">未识别到文字内容</p>';
+            }
+        }
+
+        function showStats(data, responseTime) {
+            const statsDiv = document.getElementById('statsInfo');
+            
+            statsDiv.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${data.confidence ? (data.confidence * 100).toFixed(1) : 'N/A'}%</div>
+                    <div class="stat-label">识别置信度</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${Array.isArray(data.ocrText) ? data.ocrText.length : 0}</div>
+                    <div class="stat-label">识别行数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${responseTime}ms</div>
+                    <div class="stat-label">处理时间</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${data.model || 'qwen-vl-ocr-latest'}</div>
+                    <div class="stat-label">使用模型</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${data.apiUsage?.tokensUsed || 0}</div>
+                    <div class="stat-label">Token 使用</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${data.grade || 3}</div>
+                    <div class="stat-label">推测年级</div>
+                </div>
+            `;
+        }
+
+        function showRawResponse(result) {
+            const rawDiv = document.getElementById('rawResponse');
+            rawDiv.textContent = JSON.stringify(result, null, 2);
+        }
+
+        function showTab(tabName) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有标签的active类
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签内容
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // 激活对应的标签按钮
+            event.target.classList.add('active');
+        }
+
+        function showError(message) {
+            const existingError = document.querySelector('.error');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.innerHTML = `❌ ${message}`;
+            
+            document.querySelector('.content').prepend(errorDiv);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const existingSuccess = document.querySelector('.success');
+            if (existingSuccess) {
+                existingSuccess.remove();
+            }
+            
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.innerHTML = `✅ ${message}`;
+            
+            document.querySelector('.content').prepend(successDiv);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html> 

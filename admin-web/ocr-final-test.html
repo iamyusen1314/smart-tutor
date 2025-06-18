@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR最终测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #4A90E2;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #f0f0f0;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4A90E2;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #357ABD;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            border-left: 4px solid #28a745;
+            background: #d4edda;
+        }
+        
+        .error {
+            border-left: 4px solid #dc3545;
+            background: #f8d7da;
+        }
+        
+        .loading {
+            border-left: 4px solid #ffc107;
+            background: #fff3cd;
+        }
+        
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 2px dashed #4A90E2;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        #imagePreview {
+            max-width: 100%;
+            max-height: 200px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        
+        .status-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .status-card {
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border-left: 4px solid #4A90E2;
+        }
+        
+        .status-title {
+            font-weight: bold;
+            color: #4A90E2;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 OCR功能最终测试</h1>
+        
+        <!-- 服务器状态检查 -->
+        <div class="test-section">
+            <div class="section-title">📡 服务器状态检查</div>
+            <div class="status-info">
+                <div class="status-card">
+                    <div class="status-title">服务器健康</div>
+                    <div id="serverHealth">检查中...</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-title">OCR服务</div>
+                    <div id="ocrService">检查中...</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-title">API密钥</div>
+                    <div id="apiKeyStatus">检查中...</div>
+                </div>
+            </div>
+            <button onclick="checkServices()">🔄 重新检查</button>
+        </div>
+        
+        <!-- 图片上传测试 -->
+        <div class="test-section">
+            <div class="section-title">📷 图片上传OCR测试</div>
+            <input type="file" id="imageInput" accept="image/*" onchange="handleImageSelect(event)">
+            <div>
+                <img id="imagePreview" style="display: none;">
+            </div>
+            <div>
+                <button onclick="testOCR()" id="ocrTestBtn" disabled>🤖 开始OCR识别</button>
+                <button onclick="useTestImage()">📝 使用测试图片</button>
+            </div>
+            <div id="ocrResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <!-- 数学题测试 -->
+        <div class="test-section">
+            <div class="section-title">📊 数学题识别测试</div>
+            <button onclick="testMathQuestion()">🔢 测试数学题识别</button>
+            <div id="mathResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <!-- 调试信息 -->
+        <div class="test-section">
+            <div class="section-title">🐛 调试信息</div>
+            <button onclick="clearLogs()">🗑️ 清空日志</button>
+            <button onclick="exportLogs()">📄 导出日志</button>
+            <div id="debugLogs" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedImageData = null;
+        let logs = [];
+        
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            logs.push(logEntry);
+            
+            const debugLogs = document.getElementById('debugLogs');
+            debugLogs.style.display = 'block';
+            debugLogs.textContent = logs.join('\n');
+            debugLogs.scrollTop = debugLogs.scrollHeight;
+            
+            console.log(logEntry);
+        }
+        
+        // 检查服务器状态
+        async function checkServices() {
+            addLog('开始检查服务器状态...');
+            
+            // 检查服务器健康
+            try {
+                const healthResponse = await fetch('http://localhost:3000/health');
+                const healthData = await healthResponse.json();
+                document.getElementById('serverHealth').textContent = `✅ ${healthData.status}`;
+                addLog('✅ 服务器健康检查通过');
+            } catch (error) {
+                document.getElementById('serverHealth').textContent = '❌ 连接失败';
+                addLog(`❌ 服务器健康检查失败: ${error.message}`);
+            }
+            
+            // 检查OCR服务
+            try {
+                const ocrResponse = await fetch('http://localhost:3000/api/ocr/status');
+                const ocrData = await ocrResponse.json();
+                document.getElementById('ocrService').textContent = `✅ ${ocrData.data.ocr}`;
+                addLog('✅ OCR服务检查通过');
+            } catch (error) {
+                document.getElementById('ocrService').textContent = '❌ 服务异常';
+                addLog(`❌ OCR服务检查失败: ${error.message}`);
+            }
+            
+            // 检查API密钥
+            try {
+                const testResponse = await fetch('http://localhost:3000/api/ocr/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ testType: 'quick' })
+                });
+                const testData = await testResponse.json();
+                
+                if (testData.success) {
+                    document.getElementById('apiKeyStatus').textContent = '✅ 密钥有效';
+                    addLog('✅ API密钥验证通过');
+                } else {
+                    document.getElementById('apiKeyStatus').textContent = '❌ 密钥无效';
+                    addLog(`❌ API密钥验证失败: ${testData.error}`);
+                }
+            } catch (error) {
+                document.getElementById('apiKeyStatus').textContent = '❌ 验证失败';
+                addLog(`❌ API密钥验证失败: ${error.message}`);
+            }
+        }
+        
+        // 处理图片选择
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            addLog(`选择图片: ${file.name}, 大小: ${(file.size/1024).toFixed(1)}KB`);
+            
+            // 显示图片预览
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imagePreview');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                
+                // 获取base64数据（去除前缀）
+                selectedImageData = e.target.result.split(',')[1];
+                document.getElementById('ocrTestBtn').disabled = false;
+                
+                addLog(`图片转换完成，Base64长度: ${selectedImageData.length}`);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 使用测试图片
+        function useTestImage() {
+            addLog('正在生成测试图片...');
+            
+            // 创建一个包含数学题的Canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            
+            // 背景
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 400, 200);
+            
+            // 题目文字
+            ctx.fillStyle = '#000000';
+            ctx.font = '24px Arial';
+            ctx.fillText('1. 计算: 15 + 28 = ?', 50, 50);
+            ctx.fillText('2. 小明有20个苹果，', 50, 90);
+            ctx.fillText('   吃了3个，还剩几个？', 50, 120);
+            ctx.fillText('3. 9 × 7 = ?', 50, 160);
+            
+            // 转换为base64
+            const dataURL = canvas.toDataURL('image/png');
+            selectedImageData = dataURL.split(',')[1];
+            
+            // 显示预览
+            const preview = document.getElementById('imagePreview');
+            preview.src = dataURL;
+            preview.style.display = 'block';
+            
+            document.getElementById('ocrTestBtn').disabled = false;
+            addLog(`测试图片生成完成，Base64长度: ${selectedImageData.length}`);
+        }
+        
+        // 测试OCR
+        async function testOCR() {
+            if (!selectedImageData) {
+                addLog('❌ 没有选择图片');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('ocrResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = '正在进行OCR识别...';
+            
+            addLog('开始OCR识别测试...');
+            addLog(`发送的数据大小: ${Math.round(selectedImageData.length / 1024)}KB`);
+            
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch('http://localhost:3000/api/ocr/recognize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        imageData: selectedImageData,
+                        format: 'base64',
+                        accurate: false
+                    })
+                });
+                
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                addLog(`OCR请求完成，耗时: ${duration}ms`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    const ocrData = result.data;
+                    
+                    let resultText = `🎉 OCR识别成功！\n`;
+                    resultText += `⏱️ 识别时间: ${duration}ms\n`;
+                    resultText += `📊 置信度: ${(ocrData.confidence * 100).toFixed(1)}%\n`;
+                    resultText += `📚 学科: ${ocrData.subject}\n`;
+                    resultText += `🎯 年级: ${ocrData.grade}年级\n`;
+                    resultText += `📝 题目数量: ${ocrData.questionCount}\n\n`;
+                    resultText += `📄 识别内容:\n`;
+                    ocrData.ocrText.forEach((text, index) => {
+                        resultText += `${index + 1}. ${text}\n`;
+                    });
+                    
+                    if (ocrData.apiUsage) {
+                        resultText += `\n🔧 API使用统计:\n`;
+                        resultText += `输入Token: ${ocrData.apiUsage.inputTokens}\n`;
+                        resultText += `输出Token: ${ocrData.apiUsage.outputTokens}\n`;
+                        resultText += `总Token: ${ocrData.apiUsage.totalTokens}\n`;
+                    }
+                    
+                    resultDiv.textContent = resultText;
+                    addLog('✅ OCR识别成功，结果已显示');
+                    
+                } else {
+                    throw new Error(result.error || result.message || '未知错误');
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ OCR识别失败:\n${error.message}`;
+                addLog(`❌ OCR识别失败: ${error.message}`);
+            }
+        }
+        
+        // 测试数学题
+        async function testMathQuestion() {
+            const resultDiv = document.getElementById('mathResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = '正在生成数学题并测试...';
+            
+            addLog('开始数学题识别测试...');
+            
+            // 生成数学题图片
+            const canvas = document.createElement('canvas');
+            canvas.width = 500;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            
+            // 背景
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 500, 300);
+            
+            // 数学题
+            ctx.fillStyle = '#000000';
+            ctx.font = '28px Arial';
+            ctx.fillText('一、计算题', 50, 40);
+            ctx.font = '24px Arial';
+            ctx.fillText('1. 126 + 347 = ____', 50, 80);
+            ctx.fillText('2. 85 - 39 = ____', 50, 120);
+            ctx.fillText('3. 24 × 15 = ____', 50, 160);
+            ctx.fillText('4. 144 ÷ 12 = ____', 50, 200);
+            ctx.fillText('5. 3/4 + 1/8 = ____', 50, 240);
+            
+            const dataURL = canvas.toDataURL('image/png');
+            const imageData = dataURL.split(',')[1];
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ocr/recognize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        imageData: imageData,
+                        format: 'base64',
+                        accurate: true
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    const ocrData = result.data;
+                    
+                    let resultText = `🎯 数学题识别结果:\n\n`;
+                    resultText += `📊 置信度: ${(ocrData.confidence * 100).toFixed(1)}%\n`;
+                    resultText += `📚 学科识别: ${ocrData.subject}\n`;
+                    resultText += `🎓 年级估计: ${ocrData.grade}年级\n`;
+                    resultText += `📝 题目数量: ${ocrData.questionCount}\n\n`;
+                    resultText += `📄 识别的题目内容:\n`;
+                    ocrData.ocrText.forEach((text, index) => {
+                        resultText += `${index + 1}. ${text}\n`;
+                    });
+                    
+                    resultDiv.textContent = resultText;
+                    addLog('✅ 数学题识别测试成功');
+                    
+                } else {
+                    throw new Error(result.error || result.message || '未知错误');
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 数学题识别失败:\n${error.message}`;
+                addLog(`❌ 数学题识别失败: ${error.message}`);
+            }
+        }
+        
+        // 清空日志
+        function clearLogs() {
+            logs = [];
+            document.getElementById('debugLogs').textContent = '';
+            document.getElementById('debugLogs').style.display = 'none';
+        }
+        
+        // 导出日志
+        function exportLogs() {
+            const logText = logs.join('\n');
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ocr-test-logs-${new Date().toISOString().slice(0,19)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // 页面加载时自动检查服务状态
+        window.onload = function() {
+            checkServices();
+        };
+    </script>
+</body>
+</html> 

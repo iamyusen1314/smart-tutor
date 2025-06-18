@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI学习计划修复测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .fix-summary {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-form {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        input, select, textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .result-section {
+            margin-top: 20px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .status.loading {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .json-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .before {
+            background: #fff3cd;
+        }
+        .after {
+            background: #d4edda;
+        }
+        .test-examples {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .example-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🔧 AI学习计划修复测试</h1>
+        
+        <div class="fix-summary">
+            <h3>🎯 修复内容总结</h3>
+            <ul>
+                <li><strong>问题1解决</strong>：AI聊天显示"示例题目1"而不是真实题目</li>
+                <li><strong>问题2解决</strong>：AI学习计划生成超时优化（25秒→12秒）</li>
+                <li><strong>核心修复</strong>：即使AI调用失败，也使用OCR识别的真实题目内容</li>
+                <li><strong>性能优化</strong>：使用qwen-turbo模型提升响应速度</li>
+                <li><strong>fallback改进</strong>：智能分析真实题目类型和难度</li>
+            </ul>
+        </div>
+
+        <!-- 修复前后对比 -->
+        <div class="test-section">
+            <h3>📊 修复前后对比</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>问题项</th>
+                        <th class="before">修复前</th>
+                        <th class="after">修复后</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>AI聊天内容</td>
+                        <td class="before">显示"示例题目1"等模拟数据</td>
+                        <td class="after">显示OCR识别的真实题目</td>
+                    </tr>
+                    <tr>
+                        <td>学习计划超时</td>
+                        <td class="before">25秒，经常超时</td>
+                        <td class="after">12秒，使用最快模型</td>
+                    </tr>
+                    <tr>
+                        <td>失败处理</td>
+                        <td class="before">fallback使用示例题目</td>
+                        <td class="after">fallback使用真实OCR题目</td>
+                    </tr>
+                    <tr>
+                        <td>用户体验</td>
+                        <td class="before">令人困惑和沮丧</td>
+                        <td class="after">真实、可靠、快速</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 测试用例 -->
+        <div class="test-section">
+            <h3>🧪 学习计划生成测试</h3>
+            
+            <div class="test-examples">
+                <h4>测试用例示例</h4>
+                <div class="example-item">
+                    <strong>数学计算题：</strong>3+5=?, 8-4=?, 6×2=?, 12÷3=?
+                </div>
+                <div class="example-item">
+                    <strong>应用题：</strong>小明有24个苹果，要平均分给6个朋友，每个朋友分到几个？
+                </div>
+                <div class="example-item">
+                    <strong>混合题目：</strong>15+8=?, 小红买了3支笔，每支2元，一共花了多少钱？
+                </div>
+            </div>
+
+            <div class="test-form">
+                <div class="form-group">
+                    <label for="subject">学科选择：</label>
+                    <select id="subject">
+                        <option value="math">数学</option>
+                        <option value="chinese">语文</option>
+                        <option value="english">英语</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="grade">年级选择：</label>
+                    <select id="grade">
+                        <option value="1">一年级</option>
+                        <option value="2">二年级</option>
+                        <option value="3" selected>三年级</option>
+                        <option value="4">四年级</option>
+                        <option value="5">五年级</option>
+                        <option value="6">六年级</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="questions">题目内容（每行一题）：</label>
+                    <textarea id="questions" placeholder="请输入真实的题目内容，每行一题。这将测试即使AI失败，系统也能基于这些真实题目生成学习计划。">3+5=?
+8-4=?
+小明有15个苹果，吃了3个，还剩几个？
+6×2=?</textarea>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="testPlanGeneration()">🚀 测试学习计划生成</button>
+                <button class="btn-success" onclick="loadExample('math')">📝 加载数学示例</button>
+                <button class="btn-success" onclick="loadExample('mixed')">📝 加载混合示例</button>
+                <button class="btn-warning" onclick="testTimeout()">⏱️ 测试超时处理</button>
+                <button class="btn-danger" onclick="clearResults()">🗑️ 清空结果</button>
+            </div>
+
+            <div id="planResults" class="result-section"></div>
+        </div>
+
+        <!-- AI聊天测试 -->
+        <div class="test-section">
+            <h3>💬 AI聊天内容测试</h3>
+            <p>测试AI聊天是否能正确显示真实题目而不是"示例题目1"</p>
+            
+            <div class="button-group">
+                <button class="btn-primary" onclick="testAiChat()">🤖 测试AI聊天功能</button>
+                <button class="btn-primary" onclick="testChatWithRealProblem()">📚 测试真题聊天</button>
+            </div>
+            
+            <div id="chatResults" class="result-section"></div>
+        </div>
+
+        <!-- 性能测试 -->
+        <div class="test-section">
+            <h3>⚡ 性能测试</h3>
+            <p>测试修复后的响应速度改善</p>
+            
+            <div class="button-group">
+                <button class="btn-primary" onclick="performanceTest()">🏃‍♂️ 执行性能测试</button>
+                <button class="btn-primary" onclick="batchTest()">📊 批量测试(10次)</button>
+            </div>
+            
+            <div id="performanceResults" class="result-section"></div>
+        </div>
+    </div>
+
+    <script>
+        const serverHost = 'http://localhost:3000';
+        let testResults = [];
+
+        function setStatus(type, message, containerId = 'planResults') {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function displayResult(result, containerId = 'planResults') {
+            const container = document.getElementById(containerId);
+            container.innerHTML += `<div class="json-display">${JSON.stringify(result, null, 2)}</div>`;
+        }
+
+        function loadExample(type) {
+            const examples = {
+                math: `3+5=?
+8-4=?
+6×2=?
+12÷3=?`,
+                mixed: `15+8=?
+小明有24个苹果，平均分给6个朋友，每个朋友分到几个？
+35-17=?
+小红买了3支笔，每支2元，一共花了多少钱？`,
+                chinese: `给下面的句子加上标点符号
+春天来了花朵开放了
+选择正确的字填空：他（的、得、地）跑得很快
+仿写句子：小鸟在天空中飞翔`,
+                english: `What color is the apple?
+I ___ a student. (am/is/are)
+Translate: 这是一本书
+Write the plural form: cat - ___`
+            };
+            
+            document.getElementById('questions').value = examples[type] || examples.math;
+            
+            if (type === 'chinese') {
+                document.getElementById('subject').value = 'chinese';
+            } else if (type === 'english') {
+                document.getElementById('subject').value = 'english';
+            } else {
+                document.getElementById('subject').value = 'math';
+            }
+        }
+
+        async function testPlanGeneration() {
+            const subject = document.getElementById('subject').value;
+            const grade = document.getElementById('grade').value;
+            const questionsText = document.getElementById('questions').value.trim();
+            
+            if (!questionsText) {
+                setStatus('error', '请先输入题目内容');
+                return;
+            }
+
+            const questions = questionsText.split('\n').filter(q => q.trim());
+            
+            setStatus('loading', `正在测试学习计划生成... (${questions.length}道题)`);
+            
+            const startTime = Date.now();
+            
+            try {
+                console.log('🧪 发送学习计划生成请求:', { subject, grade, questions });
+                
+                const response = await fetch(`${serverHost}/api/plan/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ocrText: questions,
+                        subject: subject,
+                        grade: parseInt(grade)
+                    })
+                });
+
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ 学习计划生成成功:', result);
+                    
+                    // 检查是否使用了真实题目
+                    const hasRealQuestions = result.questions && result.questions.some(q => 
+                        questions.some(originalQ => q.text.includes(originalQ.split('=')[0]) || q.text === originalQ)
+                    );
+                    
+                    const planSummary = `
+✅ 学习计划生成成功！
+📊 响应时间: ${responseTime}ms
+📚 计划ID: ${result.planId}
+🎯 学科: ${subject} (${grade}年级)
+📝 题目数量: ${result.questionCount}
+⏱️ 预计总时长: ${result.estimatedTotalTime}分钟
+🔍 使用真实题目: ${hasRealQuestions ? '✅ 是' : '❌ 否（还在使用示例数据）'}
+🤖 AI生成: ${result.aiGenerated ? '✅ 是' : '❌ 否'}
+                    `;
+                    
+                    setStatus('success', planSummary);
+                    displayResult(result);
+                    
+                    testResults.push({
+                        type: 'plan_generation',
+                        success: true,
+                        responseTime,
+                        hasRealQuestions,
+                        questionCount: result.questionCount
+                    });
+                    
+                } else {
+                    const errorText = await response.text();
+                    setStatus('error', `❌ 学习计划生成失败: ${response.status} - ${errorText}`);
+                    
+                    testResults.push({
+                        type: 'plan_generation',
+                        success: false,
+                        error: `${response.status} - ${errorText}`
+                    });
+                }
+
+            } catch (error) {
+                console.error('❌ 学习计划生成失败:', error);
+                setStatus('error', `❌ 学习计划生成失败: ${error.message}`);
+                
+                testResults.push({
+                    type: 'plan_generation',
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+
+        async function testAiChat() {
+            setStatus('loading', '正在测试AI聊天功能...', 'chatResults');
+            
+            try {
+                const response = await fetch(`${serverHost}/api/ai-chat/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: '这道题我不会做，你能帮我吗？',
+                        questionId: 'test_q1',
+                        studentId: 'test_student'
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    setStatus('success', '✅ AI聊天功能正常', 'chatResults');
+                    displayResult(result, 'chatResults');
+                } else {
+                    setStatus('error', `❌ AI聊天失败: ${response.status}`, 'chatResults');
+                }
+                
+            } catch (error) {
+                setStatus('error', `❌ AI聊天失败: ${error.message}`, 'chatResults');
+            }
+        }
+
+        async function testChatWithRealProblem() {
+            setStatus('loading', '正在测试真题AI聊天...', 'chatResults');
+            
+            try {
+                const response = await fetch(`${serverHost}/api/ai-chat/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: '小明有24个苹果，要平均分给6个朋友，每个朋友分到几个？这道题我不会做。',
+                        questionId: 'real_math_q1',
+                        studentId: 'test_student'
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // 检查AI回复是否涉及真实题目而不是示例题目
+                    const isRealProblemResponse = result.aiResponse && (
+                        result.aiResponse.includes('24') || 
+                        result.aiResponse.includes('苹果') || 
+                        result.aiResponse.includes('平均分') ||
+                        result.aiResponse.includes('6个朋友')
+                    );
+                    
+                    const hasTemplateResponse = result.aiResponse && (
+                        result.aiResponse.includes('示例题目') ||
+                        result.aiResponse.includes('注意看题目的关键信息')
+                    );
+                    
+                    const summary = `
+✅ AI聊天测试完成
+🔍 回复内容涉及真实题目: ${isRealProblemResponse ? '✅ 是' : '❌ 否'}
+⚠️ 使用模板回复: ${hasTemplateResponse ? '❌ 是' : '✅ 否'}
+⚡ 响应时间: ${result.responseTime || 'N/A'}ms
+🤖 模型: ${result.model || 'N/A'}
+                    `;
+                    
+                    setStatus('success', summary, 'chatResults');
+                    displayResult(result, 'chatResults');
+                } else {
+                    setStatus('error', `❌ 真题聊天失败: ${response.status}`, 'chatResults');
+                }
+                
+            } catch (error) {
+                setStatus('error', `❌ 真题聊天失败: ${error.message}`, 'chatResults');
+            }
+        }
+
+        async function testTimeout() {
+            setStatus('loading', '正在测试超时处理（可能需要等待）...');
+            
+            // 创建一个包含复杂内容的请求来触发可能的超时
+            const complexQuestions = [
+                '解方程：2x + 5 = 15，求x的值，并检验答案',
+                '小明的妈妈买了若干个苹果，第一天吃了总数的1/4，第二天吃了剩下的1/3，第三天吃了剩下的1/2，最后还剩下6个苹果。问：小明的妈妈总共买了多少个苹果？',
+                '一个长方形的长是宽的3倍，如果长减少4厘米，宽增加2厘米，就变成了一个正方形。求原来长方形的长和宽。',
+                '有一堆糖果，如果按每人3个分给小朋友，则多出2个；如果按每人4个分，则少3个。问有多少个小朋友，多少个糖果？'
+            ];
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(`${serverHost}/api/plan/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ocrText: complexQuestions,
+                        subject: 'math',
+                        grade: 5
+                    })
+                });
+                
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    setStatus('success', `✅ 复杂题目处理成功 (${responseTime}ms) - 未发生超时`);
+                    displayResult({ responseTime, questionCount: result.questionCount, success: true });
+                } else {
+                    setStatus('error', `❌ 复杂题目处理失败: ${response.status}`);
+                }
+                
+            } catch (error) {
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (error.name === 'AbortError' || error.message.includes('timeout')) {
+                    setStatus('success', `✅ 超时处理正常 (${responseTime}ms) - 系统应该使用fallback`);
+                } else {
+                    setStatus('error', `❌ 测试失败: ${error.message}`);
+                }
+            }
+        }
+
+        async function performanceTest() {
+            setStatus('loading', '正在进行性能测试...', 'performanceResults');
+            
+            const testCases = [
+                { name: '简单计算题', questions: ['3+5=?', '8-4=?'], expectedTime: 5000 },
+                { name: '中等应用题', questions: ['小明有15个苹果，吃了3个，还剩几个？'], expectedTime: 8000 },
+                { name: '混合题目', questions: ['6×2=?', '小红买了3支笔，每支2元，一共花了多少钱？', '24÷6=?'], expectedTime: 10000 }
+            ];
+            
+            let results = [];
+            
+            for (const testCase of testCases) {
+                const startTime = Date.now();
+                
+                try {
+                    const response = await fetch(`${serverHost}/api/plan/create`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            ocrText: testCase.questions,
+                            subject: 'math',
+                            grade: 3
+                        })
+                    });
+                    
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+                    
+                    results.push({
+                        name: testCase.name,
+                        responseTime,
+                        expectedTime: testCase.expectedTime,
+                        success: response.ok,
+                        improved: responseTime < testCase.expectedTime
+                    });
+                    
+                } catch (error) {
+                    results.push({
+                        name: testCase.name,
+                        error: error.message,
+                        success: false
+                    });
+                }
+            }
+            
+            const summary = `
+⚡ 性能测试完成
+📊 测试用例: ${results.length}个
+✅ 成功: ${results.filter(r => r.success).length}个
+❌ 失败: ${results.filter(r => !r.success).length}个
+🚀 性能改善: ${results.filter(r => r.improved).length}个
+            `;
+            
+            setStatus('success', summary, 'performanceResults');
+            displayResult(results, 'performanceResults');
+        }
+
+        async function batchTest() {
+            setStatus('loading', '正在进行批量测试（10次）...', 'performanceResults');
+            
+            const questions = ['3+5=?', '8-4=?', '小明有15个苹果，吃了3个，还剩几个？'];
+            let results = [];
+            
+            for (let i = 0; i < 10; i++) {
+                const startTime = Date.now();
+                
+                try {
+                    const response = await fetch(`${serverHost}/api/plan/create`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            ocrText: questions,
+                            subject: 'math',
+                            grade: 3
+                        })
+                    });
+                    
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+                    
+                    results.push({
+                        testNum: i + 1,
+                        responseTime,
+                        success: response.ok
+                    });
+                    
+                } catch (error) {
+                    results.push({
+                        testNum: i + 1,
+                        error: error.message,
+                        success: false
+                    });
+                }
+                
+                // 短暂延迟避免过于密集的请求
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            const successfulResults = results.filter(r => r.success && r.responseTime);
+            const avgResponseTime = successfulResults.length > 0 ? 
+                successfulResults.reduce((sum, r) => sum + r.responseTime, 0) / successfulResults.length : 0;
+            
+            const summary = `
+📊 批量测试完成 (10次)
+✅ 成功率: ${results.filter(r => r.success).length}/10
+⚡ 平均响应时间: ${Math.round(avgResponseTime)}ms
+🔥 最快响应: ${Math.min(...successfulResults.map(r => r.responseTime))}ms
+🐌 最慢响应: ${Math.max(...successfulResults.map(r => r.responseTime))}ms
+            `;
+            
+            setStatus('success', summary, 'performanceResults');
+            displayResult(results, 'performanceResults');
+        }
+
+        function clearResults() {
+            document.getElementById('planResults').innerHTML = '';
+            document.getElementById('chatResults').innerHTML = '';
+            document.getElementById('performanceResults').innerHTML = '';
+            testResults = [];
+        }
+
+        // 页面加载时自动加载示例
+        window.onload = function() {
+            loadExample('math');
+        };
+    </script>
+</body>
+</html> 

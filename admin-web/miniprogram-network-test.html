@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 小程序网络诊断工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section-title {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .test-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+        }
+
+        .test-label {
+            font-weight: bold;
+            color: #444;
+            margin-bottom: 10px;
+        }
+
+        .test-result {
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #52c41a, #73d13d);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff4d4f, #ff7875);
+            color: white;
+        }
+
+        .config-info {
+            background: linear-gradient(135deg, #e6f7ff, #f0f5ff);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #91d5ff;
+        }
+
+        .config-title {
+            font-size: 1.2em;
+            color: #1890ff;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px dashed #d9d9d9;
+        }
+
+        .config-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .config-value {
+            color: #1890ff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .solution-section {
+            background: linear-gradient(135deg, #fff1f0, #fff7e6);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid #ffccc7;
+        }
+
+        .solution-title {
+            font-size: 1.3em;
+            color: #cf1322;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .solution-item {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid #ff7875;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🔧 小程序网络诊断工具</h1>
+            <p class="subtitle">帮助排查小程序网络连接问题</p>
+        </div>
+
+        <!-- 当前配置信息 -->
+        <div class="config-info">
+            <div class="config-title">📊 当前网络配置</div>
+            <div class="config-item">
+                <span class="config-label">服务器地址:</span>
+                <span class="config-value" id="serverHost">http://192.168.31.180:3000</span>
+            </div>
+            <div class="config-item">
+                <span class="config-label">小程序配置:</span>
+                <span class="config-value">miniprogram/app.js</span>
+            </div>
+            <div class="config-item">
+                <span class="config-label">网络接口:</span>
+                <span class="config-value">utils/util.js - request()</span>
+            </div>
+            <div class="config-item">
+                <span class="config-label">测试时间:</span>
+                <span class="config-value" id="testTime">-</span>
+            </div>
+        </div>
+
+        <!-- 自动诊断按钮 -->
+        <div class="section">
+            <div class="section-title">🚀 一键诊断</div>
+            <button class="btn btn-primary" onclick="runFullDiagnosis()">开始全面诊断</button>
+            <button class="btn btn-success" onclick="testBasicConnection()">基础连接测试</button>
+            <button class="btn btn-danger" onclick="clearResults()">清除结果</button>
+        </div>
+
+        <!-- 测试结果区域 -->
+        <div class="section">
+            <div class="section-title">📋 诊断结果</div>
+            <div id="testResults"></div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div class="stats" id="statsSection" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-number" id="totalTests">0</div>
+                <div class="stat-label">总测试数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="successTests">0</div>
+                <div class="stat-label">成功数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="failedTests">0</div>
+                <div class="stat-label">失败数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgResponseTime">0ms</div>
+                <div class="stat-label">平均响应时间</div>
+            </div>
+        </div>
+
+        <!-- 解决方案区域 -->
+        <div class="solution-section" id="solutionSection" style="display: none;">
+            <div class="solution-title">💡 常见问题解决方案</div>
+            <div id="solutions"></div>
+        </div>
+    </div>
+
+    <script>
+        const serverHost = 'http://192.168.31.180:3000';
+        let testStats = {
+            total: 0,
+            success: 0,
+            failed: 0,
+            responseTimes: []
+        };
+
+        // 更新测试时间
+        document.getElementById('testTime').textContent = new Date().toLocaleString();
+
+        // 全面诊断
+        async function runFullDiagnosis() {
+            addTestResult('🚀 开始全面网络诊断...', 'info');
+            clearStats();
+            
+            const tests = [
+                { name: '基础连接测试', func: testBasicConnection },
+                { name: '健康检查接口', func: testHealthCheck },
+                { name: 'AI聊天接口', func: testAIChatAPI },
+                { name: 'OCR接口状态', func: testOCRStatus },
+                { name: '学习计划接口', func: testPlanAPI },
+                { name: '网络延迟测试', func: testNetworkLatency }
+            ];
+
+            for (const test of tests) {
+                try {
+                    addTestResult(`🧪 正在测试: ${test.name}...`, 'info');
+                    await test.func();
+                    await new Promise(resolve => setTimeout(resolve, 500)); // 测试间隔
+                } catch (error) {
+                    console.error(`测试失败 [${test.name}]:`, error);
+                }
+            }
+
+            updateStats();
+            showSolutions();
+            addTestResult('✅ 全面诊断完成！', 'success');
+        }
+
+        // 基础连接测试
+        async function testBasicConnection() {
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${serverHost}/health`, {
+                    method: 'GET',
+                    timeout: 5000
+                });
+                
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    testStats.success++;
+                    testStats.responseTimes.push(responseTime);
+                    addTestResult(`✅ 基础连接测试成功
+响应时间: ${responseTime}ms
+服务状态: ${data.status}
+服务版本: ${data.version}`, 'success');
+                } else {
+                    testStats.failed++;
+                    addTestResult(`❌ 基础连接测试失败
+HTTP状态码: ${response.status}
+错误信息: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                testStats.failed++;
+                addTestResult(`❌ 基础连接测试失败
+错误信息: ${error.message}
+建议: 检查服务器是否启动，网络是否连通`, 'error');
+            }
+            testStats.total++;
+        }
+
+        // 健康检查接口测试
+        async function testHealthCheck() {
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${serverHost}/health`);
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    testStats.success++;
+                    testStats.responseTimes.push(responseTime);
+                    addTestResult(`✅ 健康检查接口正常
+响应时间: ${responseTime}ms
+服务列表: ${Object.keys(data.services || {}).join(', ')}`, 'success');
+                } else {
+                    testStats.failed++;
+                    addTestResult(`❌ 健康检查接口异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                testStats.failed++;
+                addTestResult(`❌ 健康检查接口失败: ${error.message}`, 'error');
+            }
+            testStats.total++;
+        }
+
+        // AI聊天接口测试
+        async function testAIChatAPI() {
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${serverHost}/api/ai-chat/tutoring`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: '1+1=?',
+                        studentInput: '我不知道',
+                        subject: 'math',
+                        grade: 1,
+                        currentStep: 'understanding'
+                    })
+                });
+                
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    testStats.success++;
+                    testStats.responseTimes.push(responseTime);
+                    addTestResult(`✅ AI聊天接口正常
+响应时间: ${responseTime}ms
+AI模型: ${data.data?.model || '未知'}
+回复内容: ${data.data?.aiResponse?.substring(0, 50) || ''}...`, 'success');
+                } else {
+                    testStats.failed++;
+                    addTestResult(`❌ AI聊天接口异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                testStats.failed++;
+                addTestResult(`❌ AI聊天接口失败: ${error.message}`, 'error');
+            }
+            testStats.total++;
+        }
+
+        // OCR状态测试
+        async function testOCRStatus() {
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${serverHost}/api/ocr/status`);
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    testStats.success++;
+                    testStats.responseTimes.push(responseTime);
+                    addTestResult(`✅ OCR状态接口正常
+响应时间: ${responseTime}ms
+OCR状态: ${data.status || '未知'}`, 'success');
+                } else {
+                    testStats.failed++;
+                    addTestResult(`❌ OCR状态接口异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                testStats.failed++;
+                addTestResult(`❌ OCR状态接口失败: ${error.message}`, 'error');
+            }
+            testStats.total++;
+        }
+
+        // 学习计划接口测试
+        async function testPlanAPI() {
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${serverHost}/api/plan/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ocrText: ['1+1=', '2+2='],
+                        subject: 'math',
+                        grade: 1
+                    })
+                });
+                
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    testStats.success++;
+                    testStats.responseTimes.push(responseTime);
+                    addTestResult(`✅ 学习计划接口正常
+响应时间: ${responseTime}ms
+计划ID: ${data.planId || '未知'}
+题目数量: ${data.questionCount || 0}`, 'success');
+                } else {
+                    testStats.failed++;
+                    addTestResult(`❌ 学习计划接口异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                testStats.failed++;
+                addTestResult(`❌ 学习计划接口失败: ${error.message}`, 'error');
+            }
+            testStats.total++;
+        }
+
+        // 网络延迟测试
+        async function testNetworkLatency() {
+            const tests = [];
+            for (let i = 0; i < 5; i++) {
+                const startTime = Date.now();
+                try {
+                    const response = await fetch(`${serverHost}/health`);
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+                    tests.push(responseTime);
+                    testStats.responseTimes.push(responseTime);
+                } catch (error) {
+                    tests.push(null);
+                }
+            }
+            
+            const validTests = tests.filter(t => t !== null);
+            if (validTests.length > 0) {
+                const avgLatency = Math.round(validTests.reduce((a, b) => a + b, 0) / validTests.length);
+                const minLatency = Math.min(...validTests);
+                const maxLatency = Math.max(...validTests);
+                
+                testStats.success++;
+                addTestResult(`✅ 网络延迟测试完成
+平均延迟: ${avgLatency}ms
+最小延迟: ${minLatency}ms
+最大延迟: ${maxLatency}ms
+成功率: ${(validTests.length / tests.length * 100).toFixed(1)}%`, 'success');
+            } else {
+                testStats.failed++;
+                addTestResult(`❌ 网络延迟测试失败: 无法连接到服务器`, 'error');
+            }
+            testStats.total++;
+        }
+
+        // 添加测试结果
+        function addTestResult(message, type) {
+            const testResults = document.getElementById('testResults');
+            const testItem = document.createElement('div');
+            testItem.className = 'test-item';
+            
+            const result = document.createElement('div');
+            result.className = `test-result ${type}`;
+            result.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            testItem.appendChild(result);
+            testResults.appendChild(testItem);
+            
+            // 滚动到底部
+            testResults.scrollTop = testResults.scrollHeight;
+        }
+
+        // 清除结果
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('statsSection').style.display = 'none';
+            document.getElementById('solutionSection').style.display = 'none';
+            clearStats();
+        }
+
+        // 清除统计
+        function clearStats() {
+            testStats = {
+                total: 0,
+                success: 0,
+                failed: 0,
+                responseTimes: []
+            };
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('successTests').textContent = testStats.success;
+            document.getElementById('failedTests').textContent = testStats.failed;
+            
+            if (testStats.responseTimes.length > 0) {
+                const avgTime = Math.round(testStats.responseTimes.reduce((a, b) => a + b, 0) / testStats.responseTimes.length);
+                document.getElementById('avgResponseTime').textContent = `${avgTime}ms`;
+            }
+            
+            document.getElementById('statsSection').style.display = 'grid';
+        }
+
+        // 显示解决方案
+        function showSolutions() {
+            const solutions = [
+                {
+                    condition: () => testStats.failed > 0,
+                    title: '网络连接问题',
+                    content: '1. 检查服务器是否启动在 3000 端口\n2. 确认服务器监听 0.0.0.0:3000 而非 localhost:3000\n3. 检查防火墙设置\n4. 确认 IP 地址 192.168.31.180 是否正确'
+                },
+                {
+                    condition: () => testStats.failed === 0 && testStats.success > 0,
+                    title: '✅ 网络连接正常',
+                    content: '服务器连接正常，如果小程序仍有问题，请检查：\n1. 微信开发者工具中是否开启"不校验合法域名"\n2. 小程序代码中的错误处理逻辑\n3. 小程序的网络请求封装函数'
+                },
+                {
+                    condition: () => testStats.responseTimes.some(t => t > 5000),
+                    title: '响应时间较慢',
+                    content: '部分接口响应较慢，建议：\n1. 检查网络连接质量\n2. 优化 AI 接口调用\n3. 增加请求超时时间\n4. 考虑添加加载提示'
+                }
+            ];
+
+            const solutionsContainer = document.getElementById('solutions');
+            solutionsContainer.innerHTML = '';
+            
+            const activeSolutions = solutions.filter(solution => solution.condition());
+            
+            if (activeSolutions.length > 0) {
+                activeSolutions.forEach(solution => {
+                    const solutionItem = document.createElement('div');
+                    solutionItem.className = 'solution-item';
+                    solutionItem.innerHTML = `
+                        <strong>${solution.title}</strong><br>
+                        <pre style="margin-top: 10px; white-space: pre-wrap;">${solution.content}</pre>
+                    `;
+                    solutionsContainer.appendChild(solutionItem);
+                });
+                
+                document.getElementById('solutionSection').style.display = 'block';
+            }
+        }
+
+        // 页面加载时自动运行基础测试
+        window.addEventListener('load', () => {
+            addTestResult('🔧 网络诊断工具已加载，点击按钮开始测试', 'info');
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台修复测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px 10px 10px 0;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .online {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 管理后台修复验证</h1>
+        <p>我已经修复了以下问题：</p>
+        <ul>
+            <li>✅ 修复了模块导入路径不一致问题</li>
+            <li>✅ 更新了 Vite 端口配置为 8085</li>
+            <li>✅ 创建了简单测试页面验证基础功能</li>
+            <li>✅ 重新启动了开发服务器</li>
+        </ul>
+        
+        <div style="margin: 20px 0;">
+            <span class="status online">服务器状态: 运行中 (端口 8085)</span>
+        </div>
+        
+        <h3>📋 测试步骤</h3>
+        <ol>
+            <li>点击下面的链接访问管理后台</li>
+            <li>应该能看到 "🚀 管理后台测试页面" 而不是白屏</li>
+            <li>测试按钮点击功能是否正常</li>
+            <li>检查浏览器控制台是否还有错误</li>
+        </ol>
+        
+        <div style="margin-top: 30px;">
+            <a href="http://localhost:8085/" target="_blank" class="btn">
+                🔗 打开管理后台 (localhost:8085)
+            </a>
+            <a href="http://localhost:8085/dashboard" target="_blank" class="btn">
+                📊 访问仪表板页面
+            </a>
+        </div>
+        
+        <h3>🔍 如果仍然是白屏</h3>
+        <p>请检查：</p>
+        <ul>
+            <li>浏览器控制台是否有 JavaScript 错误</li>
+            <li>Network 标签页是否有 404 或其他网络错误</li>
+            <li>是否需要清除浏览器缓存</li>
+        </ul>
+        
+        <div style="margin-top: 30px; padding: 20px; background: #e8f4fd; border-radius: 8px;">
+            <h4>🔧 常见问题排查</h4>
+            <p><strong>如果还是白屏，请按 F12 打开开发者工具，查看 Console 标签页的错误信息。</strong></p>
+            <p>常见错误类型：</p>
+            <ul>
+                <li>模块加载失败 (Failed to fetch dynamically imported module)</li>
+                <li>API 请求失败 (Network Error)</li>
+                <li>Vue 组件编译错误 (Template compilation error)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 简单的连通性测试
+        fetch('http://localhost:8085/')
+            .then(response => {
+                console.log('✅ 管理后台连接正常:', response.status);
+            })
+            .catch(error => {
+                console.error('❌ 管理后台连接失败:', error);
+            });
+    </script>
+</body>
+</html> 

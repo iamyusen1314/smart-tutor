@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 AI聊天功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4A90E2;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            background: #f8f9fa;
+        }
+        
+        .test-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #4A90E2, #357ABD);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .loading {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 18px;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4A90E2;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4A90E2;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        
+        textarea:focus {
+            border-color: #4A90E2;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI聊天功能测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">
+                🚀 快速API连通性测试
+            </div>
+            <button onclick="testAPIConnectivity()">测试所有AI聊天API</button>
+            <div id="connectivityResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">
+                💬 AI答疑对话测试
+            </div>
+            <textarea id="questionInput" placeholder="输入数学题目，例如：1+1=?"></textarea>
+            <textarea id="studentInput" placeholder="输入学生的回答或疑问"></textarea>
+            <button onclick="testAITutoring()">开始AI答疑</button>
+            <div id="tutoringResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">
+                💡 AI智能提示测试
+            </div>
+            <textarea id="hintQuestion" placeholder="输入需要提示的题目"></textarea>
+            <button onclick="testAIHint()">获取AI提示</button>
+            <div id="hintResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">
+                ✅ 答案检查测试
+            </div>
+            <textarea id="checkQuestion" placeholder="输入题目"></textarea>
+            <textarea id="studentAnswer" placeholder="输入学生答案"></textarea>
+            <button onclick="testAnswerCheck()">检查答案</button>
+            <div id="checkResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="stats" id="statsSection" style="display:none;">
+            <div class="stat-card">
+                <div class="stat-value" id="totalTests">0</div>
+                <div class="stat-label">总测试次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="successTests">0</div>
+                <div class="stat-label">成功次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgResponseTime">0ms</div>
+                <div class="stat-label">平均响应时间</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="successRate">0%</div>
+                <div class="stat-label">成功率</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://192.168.31.180:3000';
+        let testStats = {
+            total: 0,
+            success: 0,
+            responseTimes: []
+        };
+
+        async function apiRequest(url, options = {}) {
+            const startTime = Date.now();
+            try {
+                const response = await fetch(`${API_BASE}${url}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const responseTime = Date.now() - startTime;
+                const data = await response.json();
+                
+                testStats.total++;
+                testStats.responseTimes.push(responseTime);
+                
+                if (response.ok) {
+                    testStats.success++;
+                    updateStats();
+                    return { success: true, data, responseTime };
+                } else {
+                    updateStats();
+                    return { success: false, error: data, responseTime };
+                }
+            } catch (error) {
+                const responseTime = Date.now() - startTime;
+                testStats.total++;
+                testStats.responseTimes.push(responseTime);
+                updateStats();
+                return { success: false, error: error.message, responseTime };
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('statsSection').style.display = 'grid';
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('successTests').textContent = testStats.success;
+            
+            const avgTime = testStats.responseTimes.length > 0 
+                ? Math.round(testStats.responseTimes.reduce((a, b) => a + b, 0) / testStats.responseTimes.length)
+                : 0;
+            document.getElementById('avgResponseTime').textContent = avgTime + 'ms';
+            
+            const successRate = testStats.total > 0 
+                ? Math.round((testStats.success / testStats.total) * 100)
+                : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+        }
+
+        function showResult(elementId, success, message, responseTime) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${success ? 'success' : 'error'}`;
+            element.textContent = `[${new Date().toLocaleTimeString()}] ${message}\n响应时间: ${responseTime}ms`;
+        }
+
+        async function testAPIConnectivity() {
+            const resultElement = document.getElementById('connectivityResult');
+            resultElement.style.display = 'block';
+            resultElement.className = 'result info';
+            resultElement.textContent = '🧪 正在测试API连通性...\n';
+
+            const tests = [
+                { name: 'Health Check', url: '/health', method: 'GET' },
+                { name: 'AI Tutoring', url: '/api/ai-chat/tutoring', method: 'POST', data: {
+                    question: '1+1=?',
+                    subject: 'math',
+                    grade: 1,
+                    studentInput: '测试输入',
+                    chatHistory: [],
+                    currentStep: 'understanding'
+                }},
+                { name: 'AI Hint', url: '/api/ai-chat/hint', method: 'POST', data: {
+                    question: '1+1=?',
+                    context: '测试提示',
+                    subject: 'math',
+                    grade: 1
+                }},
+                { name: 'Answer Check', url: '/api/ai-chat/check-answer', method: 'POST', data: {
+                    question: '1+1=?',
+                    studentAnswer: '2',
+                    subject: 'math',
+                    grade: 1
+                }}
+            ];
+
+            let results = [];
+            for (const test of tests) {
+                try {
+                    const result = await apiRequest(test.url, {
+                        method: test.method,
+                        body: test.data ? JSON.stringify(test.data) : undefined
+                    });
+
+                    const status = result.success ? '✅' : '❌';
+                    results.push(`${status} ${test.name}: ${result.success ? '成功' : '失败'} (${result.responseTime}ms)`);
+                    
+                    if (!result.success) {
+                        results.push(`   错误: ${JSON.stringify(result.error, null, 2)}`);
+                    }
+                } catch (error) {
+                    results.push(`❌ ${test.name}: 异常 - ${error.message}`);
+                }
+            }
+
+            resultElement.className = 'result success';
+            resultElement.textContent = `🧪 API连通性测试完成\n\n${results.join('\n')}`;
+        }
+
+        async function testAITutoring() {
+            const question = document.getElementById('questionInput').value || '1+1=?';
+            const studentInput = document.getElementById('studentInput').value || '我不知道';
+
+            const result = await apiRequest('/api/ai-chat/tutoring', {
+                method: 'POST',
+                body: JSON.stringify({
+                    question,
+                    subject: 'math',
+                    grade: 1,
+                    studentInput,
+                    chatHistory: [],
+                    currentStep: 'understanding'
+                })
+            });
+
+            if (result.success) {
+                const message = `✅ AI答疑成功！\n\nAI回复: ${result.data.aiResponse}\n学习步骤: ${result.data.currentStep}\n使用模型: ${result.data.model}`;
+                showResult('tutoringResult', true, message, result.responseTime);
+            } else {
+                showResult('tutoringResult', false, `❌ AI答疑失败: ${JSON.stringify(result.error, null, 2)}`, result.responseTime);
+            }
+        }
+
+        async function testAIHint() {
+            const question = document.getElementById('hintQuestion').value || '1+1=?';
+
+            const result = await apiRequest('/api/ai-chat/hint', {
+                method: 'POST',
+                body: JSON.stringify({
+                    question,
+                    context: '学生需要提示',
+                    subject: 'math',
+                    grade: 1
+                })
+            });
+
+            if (result.success) {
+                const message = `✅ AI提示生成成功！\n\n提示内容: ${result.data.hint}\n使用模型: ${result.data.model}`;
+                showResult('hintResult', true, message, result.responseTime);
+            } else {
+                showResult('hintResult', false, `❌ AI提示失败: ${JSON.stringify(result.error, null, 2)}`, result.responseTime);
+            }
+        }
+
+        async function testAnswerCheck() {
+            const question = document.getElementById('checkQuestion').value || '1+1=?';
+            const answer = document.getElementById('studentAnswer').value || '2';
+
+            const result = await apiRequest('/api/ai-chat/check-answer', {
+                method: 'POST',
+                body: JSON.stringify({
+                    question,
+                    studentAnswer: answer,
+                    subject: 'math',
+                    grade: 1
+                })
+            });
+
+            if (result.success) {
+                const data = result.data;
+                const message = `✅ 答案检查完成！\n\n正确性: ${data.isCorrect ? '正确' : '错误'}\n反馈: ${data.feedback || '无'}\n正确答案: ${data.correctAnswer || '未提供'}`;
+                showResult('checkResult', true, message, result.responseTime);
+            } else {
+                showResult('checkResult', false, `❌ 答案检查失败: ${JSON.stringify(result.error, null, 2)}`, result.responseTime);
+            }
+        }
+
+        // 页面加载时填入默认值
+        window.onload = function() {
+            document.getElementById('questionInput').value = '小明有5个苹果，吃了2个，还剩几个？';
+            document.getElementById('studentInput').value = '我觉得应该是3个，但不太确定...';
+            document.getElementById('hintQuestion').value = '计算 8 + 7 = ?';
+            document.getElementById('checkQuestion').value = '9 - 4 = ?';
+            document.getElementById('studentAnswer').value = '5';
+        };
+    </script>
+</body>
+</html> 

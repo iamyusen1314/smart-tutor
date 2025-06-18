@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 学习报告准确性测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f7fafc;
+        }
+        
+        .test-section h2 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+        
+        .question-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #4299e1;
+        }
+        
+        .question-text {
+            flex: 1;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .answer-input {
+            width: 80px;
+            padding: 5px 10px;
+            border: 2px solid #cbd5e0;
+            border-radius: 5px;
+            margin-right: 10px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .submit-btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .submit-btn:hover {
+            background: #3182ce;
+        }
+        
+        .result {
+            margin-left: 10px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .correct {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .incorrect {
+            background: #f56565;
+            color: white;
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #3182ce;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+        
+        .btn-warning {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #dd6b20;
+            transform: translateY(-2px);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4299e1;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        .report-display {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #718096;
+            font-style: italic;
+        }
+        
+        .error {
+            color: #f56565;
+            background: #fed7d7;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            color: #38a169;
+            background: #c6f6d5;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .debug-info {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 学习报告准确性测试</h1>
+        
+        <div class="control-panel">
+            <button class="btn btn-warning" onclick="clearAllRecords()">🗑️ 清空记录</button>
+            <button class="btn btn-primary" onclick="checkDebugRecords()">🔍 查看记录</button>
+            <button class="btn btn-success" onclick="generateReport()">📊 生成报告</button>
+            <button class="btn btn-primary" onclick="runAutoTest()">🚀 自动测试</button>
+        </div>
+        
+        <div class="stats" id="statsDisplay">
+            <div class="stat-item">
+                <div class="stat-number" id="totalQuestions">0</div>
+                <div class="stat-label">总题数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="correctAnswers">0</div>
+                <div class="stat-label">正确答案</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="wrongAnswers">0</div>
+                <div class="stat-label">错误答案</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="accuracy">0%</div>
+                <div class="stat-label">正确率</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📝 答题测试</h2>
+            <p>请回答以下数学题，系统会自动验证答案并记录结果：</p>
+            
+            <div id="questionsList">
+                <div class="question-item">
+                    <span class="question-text">5+3 =</span>
+                    <input type="number" class="answer-input" id="q1" placeholder="答案">
+                    <button class="submit-btn" onclick="submitAnswer('5+3 =', 'q1', this)">提交</button>
+                    <span class="result" id="result1"></span>
+                </div>
+                
+                <div class="question-item">
+                    <span class="question-text">7+4 =</span>
+                    <input type="number" class="answer-input" id="q2" placeholder="答案">
+                    <button class="submit-btn" onclick="submitAnswer('7+4 =', 'q2', this)">提交</button>
+                    <span class="result" id="result2"></span>
+                </div>
+                
+                <div class="question-item">
+                    <span class="question-text">6+4+2 =</span>
+                    <input type="number" class="answer-input" id="q3" placeholder="答案">
+                    <button class="submit-btn" onclick="submitAnswer('6+4+2 =', 'q3', this)">提交</button>
+                    <span class="result" id="result3"></span>
+                </div>
+                
+                <div class="question-item">
+                    <span class="question-text">8+3+4 =</span>
+                    <input type="number" class="answer-input" id="q4" placeholder="答案">
+                    <button class="submit-btn" onclick="submitAnswer('8+3+4 =', 'q4', this)">提交</button>
+                    <span class="result" id="result4"></span>
+                </div>
+                
+                <div class="question-item">
+                    <span class="question-text">9+1+1 =</span>
+                    <input type="number" class="answer-input" id="q5" placeholder="答案">
+                    <button class="submit-btn" onclick="submitAnswer('9+1+1 =', 'q5', this)">提交</button>
+                    <span class="result" id="result5"></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📊 学习报告</h2>
+            <div id="reportDisplay" class="report-display">
+                <div class="loading">点击"生成报告"查看学习统计...</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔧 调试信息</h2>
+            <div id="debugInfo" class="debug-info">
+                等待测试数据...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_BASE = 'http://localhost:3000';
+        let questionCounter = 1;
+
+        // 提交答案
+        async function submitAnswer(question, inputId, button) {
+            const input = document.getElementById(inputId);
+            const answer = input.value.trim();
+            
+            if (!answer) {
+                alert('请输入答案！');
+                return;
+            }
+            
+            button.disabled = true;
+            button.textContent = '提交中...';
+            
+            try {
+                const response = await fetch(`${SERVER_BASE}/api/ai-chat/tutoring`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        studentInput: answer,
+                        subject: 'math',
+                        grade: 1,
+                        currentStep: 'voice_chat'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 显示结果
+                    const resultSpan = document.getElementById(`result${questionCounter}`);
+                    
+                    // 模拟答案验证（基于已知的正确答案）
+                    const correctAnswers = {
+                        '5+3 =': 8,
+                        '7+4 =': 11,
+                        '6+4+2 =': 12,
+                        '8+3+4 =': 15,
+                        '9+1+1 =': 11
+                    };
+                    
+                    const isCorrect = parseInt(answer) === correctAnswers[question];
+                    
+                    if (isCorrect) {
+                        resultSpan.textContent = '✅ 正确';
+                        resultSpan.className = 'result correct';
+                    } else {
+                        resultSpan.textContent = `❌ 错误 (正确答案: ${correctAnswers[question]})`;
+                        resultSpan.className = 'result incorrect';
+                    }
+                    
+                    button.textContent = '已提交';
+                    updateStats();
+                    
+                } else {
+                    throw new Error(result.error || '提交失败');
+                }
+                
+            } catch (error) {
+                console.error('提交答案失败:', error);
+                button.textContent = '重试';
+                button.disabled = false;
+                alert('提交失败: ' + error.message);
+            }
+            
+            questionCounter++;
+        }
+
+        // 清空所有记录
+        async function clearAllRecords() {
+            try {
+                // 重置界面
+                const inputs = document.querySelectorAll('.answer-input');
+                const buttons = document.querySelectorAll('.submit-btn');
+                const results = document.querySelectorAll('.result');
+                
+                inputs.forEach(input => input.value = '');
+                buttons.forEach(button => {
+                    button.disabled = false;
+                    button.textContent = '提交';
+                });
+                results.forEach(result => {
+                    result.textContent = '';
+                    result.className = 'result';
+                });
+                
+                questionCounter = 1;
+                updateStats();
+                
+                document.getElementById('reportDisplay').innerHTML = '<div class="loading">记录已清空，重新答题后生成报告...</div>';
+                document.getElementById('debugInfo').textContent = '记录已清空';
+                
+                showMessage('✅ 记录已清空，可以重新测试', 'success');
+                
+            } catch (error) {
+                console.error('清空记录失败:', error);
+                showMessage('❌ 清空记录失败: ' + error.message, 'error');
+            }
+        }
+
+        // 查看调试记录
+        async function checkDebugRecords() {
+            try {
+                const response = await fetch(`${SERVER_BASE}/api/ai-chat/debug-records`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const debugInfo = {
+                        totalRecords: result.data.totalRecords,
+                        sessionSummaries: result.data.sessionSummaries,
+                        recentRecords: result.data.recentRecords.map(r => ({
+                            question: r.question,
+                            studentInput: r.studentInput,
+                            isCorrect: r.isCorrect,
+                            timestamp: r.timestamp
+                        }))
+                    };
+                    
+                    document.getElementById('debugInfo').textContent = JSON.stringify(debugInfo, null, 2);
+                    updateStats();
+                    
+                } else {
+                    throw new Error(result.error || '获取记录失败');
+                }
+                
+            } catch (error) {
+                console.error('获取调试记录失败:', error);
+                document.getElementById('debugInfo').textContent = '获取记录失败: ' + error.message;
+            }
+        }
+
+        // 生成学习报告
+        async function generateReport() {
+            document.getElementById('reportDisplay').innerHTML = '<div class="loading">🔄 正在生成学习报告...</div>';
+            
+            try {
+                const response = await fetch(`${SERVER_BASE}/api/report/today?userId=anonymous&planId=default`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const report = result.data;
+                    
+                    const reportHtml = `
+                        <h3>📊 学习统计</h3>
+                        <div class="stats">
+                            <div class="stat-item">
+                                <div class="stat-number">${report.learningStats?.totalQuestions || 0}</div>
+                                <div class="stat-label">总题数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${report.learningStats?.correctAnswers || 0}</div>
+                                <div class="stat-label">正确答案</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${report.learningStats?.wrongAnswers || 0}</div>
+                                <div class="stat-label">错误答案</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${Math.round(report.learningStats?.accuracy || 0)}%</div>
+                                <div class="stat-label">正确率</div>
+                            </div>
+                        </div>
+                        
+                        <h4>📝 答题详情</h4>
+                        <div>
+                            ${(report.learningStats?.records || []).map(record => `
+                                <div class="question-item">
+                                    <span class="question-text">${record.question}</span>
+                                    <span class="answer-input" style="border: none; background: #f7fafc;">${record.studentAnswer || record.studentInput}</span>
+                                    <span class="result ${record.isCorrect ? 'correct' : 'incorrect'}">
+                                        ${record.isCorrect ? '✅ 正确' : '❌ 错误'}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                    document.getElementById('reportDisplay').innerHTML = reportHtml;
+                    
+                } else {
+                    throw new Error(result.error || '生成报告失败');
+                }
+                
+            } catch (error) {
+                console.error('生成报告失败:', error);
+                document.getElementById('reportDisplay').innerHTML = 
+                    `<div class="error">❌ 生成报告失败: ${error.message}</div>`;
+            }
+        }
+
+        // 自动测试
+        async function runAutoTest() {
+            showMessage('🚀 开始自动测试...', 'success');
+            
+            // 清空记录
+            await clearAllRecords();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // 自动答题（一些正确，一些错误）
+            const testAnswers = [
+                { id: 'q1', answer: '8' },      // 正确: 5+3=8
+                { id: 'q2', answer: '10' },     // 错误: 7+4=11，但输入10
+                { id: 'q3', answer: '12' },     // 正确: 6+4+2=12
+                { id: 'q4', answer: '13' },     // 错误: 8+3+4=15，但输入13
+                { id: 'q5', answer: '11' }      // 正确: 9+1+1=11
+            ];
+            
+            const questions = ['5+3 =', '7+4 =', '6+4+2 =', '8+3+4 =', '9+1+1 ='];
+            
+            for (let i = 0; i < testAnswers.length; i++) {
+                const test = testAnswers[i];
+                const input = document.getElementById(test.id);
+                const button = input.nextElementSibling;
+                
+                input.value = test.answer;
+                await submitAnswer(questions[i], test.id, button);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // 等待一秒后生成报告
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await generateReport();
+            await checkDebugRecords();
+            
+            showMessage('✅ 自动测试完成！预期：3题正确，2题错误，正确率60%', 'success');
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            const results = document.querySelectorAll('.result');
+            let total = 0;
+            let correct = 0;
+            
+            results.forEach(result => {
+                if (result.textContent) {
+                    total++;
+                    if (result.classList.contains('correct')) {
+                        correct++;
+                    }
+                }
+            });
+            
+            const wrong = total - correct;
+            const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+            
+            document.getElementById('totalQuestions').textContent = total;
+            document.getElementById('correctAnswers').textContent = correct;
+            document.getElementById('wrongAnswers').textContent = wrong;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+        }
+
+        // 显示消息
+        function showMessage(message, type) {
+            const existingMsg = document.querySelector('.message');
+            if (existingMsg) {
+                existingMsg.remove();
+            }
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${type}`;
+            msgDiv.textContent = message;
+            
+            document.querySelector('.container').insertBefore(msgDiv, document.querySelector('.control-panel'));
+            
+            setTimeout(() => {
+                msgDiv.remove();
+            }, 3000);
+        }
+
+        // 页面加载完成后检查服务器状态
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch(`${SERVER_BASE}/health`);
+                if (response.ok) {
+                    showMessage('✅ 服务器连接正常，可以开始测试', 'success');
+                } else {
+                    throw new Error('服务器响应异常');
+                }
+            } catch (error) {
+                showMessage('❌ 无法连接到服务器，请确保服务器已启动', 'error');
+            }
+        });
+    </script>
+</body>
+</html> 

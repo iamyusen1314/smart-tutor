@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DashScope Token计算器 & OCR测试工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            font-size: 1.4em;
+        }
+        
+        .section h2::before {
+            content: '🔧';
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .upload-area {
+            border: 3px dashed #6c5ce7;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            background: linear-gradient(45deg, #ffecd2 0%, #fcb69f 100%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            border-color: #5f3dc4;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(108, 92, 231, 0.15);
+        }
+        
+        .upload-area.dragover {
+            border-color: #5f3dc4;
+            background: linear-gradient(45deg, #a8edea 0%, #fed6e3 100%);
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #a8e6cf 0%, #7fcdcd 100%);
+            color: #2c3e50;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: #721c24;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .info-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .info-card.success { border-left-color: #27ae60; }
+        .info-card.warning { border-left-color: #f39c12; }
+        .info-card.danger { border-left-color: #e74c3c; }
+        .info-card.info { border-left-color: #3498db; }
+        
+        .info-card h3 {
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        .info-card .value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .preview-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .result-area {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .token-calculator {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .token-calculator h3 {
+            color: #2d3436;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .token-formula {
+            background: rgba(255,255,255,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .limits-info {
+            background: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .limits-info h3 {
+            color: #2d3436;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .limit-item {
+            background: rgba(255,255,255,0.9);
+            padding: 10px 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .status-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .status-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .status-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧮 DashScope Token计算器</h1>
+            <p>基于官方规则的图像Token预测与OCR测试工具</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- 左侧：图像上传与分析 -->
+            <div class="section">
+                <h2>图像上传与分析</h2>
+                
+                <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+                    <span class="upload-icon">📷</span>
+                    <div>点击或拖拽图片到此处</div>
+                    <small>支持 JPG, PNG, WebP, BMP 格式</small>
+                </div>
+                
+                <input type="file" id="imageInput" class="file-input" accept="image/*">
+                
+                <div class="token-calculator">
+                    <h3>🧮 DashScope Token计算规则</h3>
+                    <div class="token-formula">
+                        <div><strong>像素→Token转换：</strong></div>
+                        <div>每 28×28 像素 = 1 Token</div>
+                        <div>Token数 = ⌈总像素数 ÷ 784⌉</div>
+                    </div>
+                </div>
+                
+                <div class="limits-info">
+                    <h3>📏 DashScope限制条件</h3>
+                    <div class="limit-item">
+                        <span>最小Token数：</span>
+                        <span class="status-info status-indicator">4 Tokens</span>
+                    </div>
+                    <div class="limit-item">
+                        <span>最大Token数：</span>
+                        <span class="status-info status-indicator">1,280 Tokens</span>
+                    </div>
+                    <div class="limit-item">
+                        <span>最小像素数：</span>
+                        <span class="status-info status-indicator">3,136 像素</span>
+                    </div>
+                    <div class="limit-item">
+                        <span>最大像素数：</span>
+                        <span class="status-info status-indicator">1,003,520 像素</span>
+                    </div>
+                    <div class="limit-item">
+                        <span>最大宽高比：</span>
+                        <span class="status-info status-indicator">200:1</span>
+                    </div>
+                    <div class="limit-item">
+                        <span>尺寸调整：</span>
+                        <span class="status-info status-indicator">28的倍数</span>
+                    </div>
+                </div>
+                
+                <div class="preview-container" id="previewContainer" style="display: none;">
+                    <img id="previewImage" class="preview-image" alt="预览图片">
+                </div>
+            </div>
+            
+            <!-- 右侧：分析结果与OCR测试 -->
+            <div class="section">
+                <h2>分析结果与OCR测试</h2>
+                
+                <div class="info-grid" id="analysisResults" style="display: none;">
+                    <div class="info-card info">
+                        <h3>原始尺寸</h3>
+                        <div class="value" id="originalSize">-</div>
+                    </div>
+                    <div class="info-card info">
+                        <h3>原始像素数</h3>
+                        <div class="value" id="originalPixels">-</div>
+                    </div>
+                    <div class="info-card" id="tokenCard">
+                        <h3>预计Token数</h3>
+                        <div class="value" id="estimatedTokens">-</div>
+                    </div>
+                    <div class="info-card" id="aspectRatioCard">
+                        <h3>宽高比</h3>
+                        <div class="value" id="aspectRatio">-</div>
+                    </div>
+                    <div class="info-card info">
+                        <h3>调整后尺寸</h3>
+                        <div class="value" id="adjustedSize">-</div>
+                    </div>
+                    <div class="info-card" id="finalTokenCard">
+                        <h3>最终Token数</h3>
+                        <div class="value" id="finalTokens">-</div>
+                    </div>
+                </div>
+                
+                <div id="statusInfo" style="display: none;">
+                    <h3>📊 兼容性状态</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="compatibilityProgress"></div>
+                    </div>
+                    <div id="statusMessage" class="status-indicator"></div>
+                </div>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <button class="btn" onclick="testOCR()" id="ocrButton" disabled>
+                        🔍 测试OCR识别
+                    </button>
+                    <button class="btn btn-success" onclick="clearResults()">
+                        🗑️ 清除结果
+                    </button>
+                </div>
+                
+                <div class="result-area" id="resultArea" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentImageFile = null;
+        let analysisData = null;
+        
+        // DashScope常量
+        const DASHSCOPE_LIMITS = {
+            PIXEL_PER_TOKEN: 28 * 28,
+            MIN_TOKENS: 4,
+            MAX_TOKENS: 1280,
+            MIN_PIXELS: 4 * 28 * 28,      // 3,136
+            MAX_PIXELS: 1280 * 28 * 28,   // 1,003,520
+            MAX_ASPECT_RATIO: 200,
+            GRID_SIZE: 28
+        };
+        
+        // 文件上传处理
+        document.getElementById('imageInput').addEventListener('change', handleFileSelect);
+        
+        // 拖拽上传
+        const uploadArea = document.querySelector('.upload-area');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+        
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件！');
+                return;
+            }
+            
+            currentImageFile = file;
+            
+            // 显示预览
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const previewImage = document.getElementById('previewImage');
+                previewImage.src = e.target.result;
+                document.getElementById('previewContainer').style.display = 'block';
+                
+                // 分析图片
+                analyzeImage(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function analyzeImage(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                const width = img.width;
+                const height = img.height;
+                const originalPixels = width * height;
+                const aspectRatio = Math.max(width, height) / Math.min(width, height);
+                
+                // 计算Token数
+                const originalTokens = Math.ceil(originalPixels / DASHSCOPE_LIMITS.PIXEL_PER_TOKEN);
+                
+                // 计算调整后的尺寸和Token数
+                const adjusted = calculateAdjustedDimensions(width, height);
+                
+                // 更新显示
+                updateAnalysisDisplay(width, height, originalPixels, originalTokens, aspectRatio, adjusted);
+                
+                // 保存分析数据
+                analysisData = {
+                    original: { width, height, pixels: originalPixels, tokens: originalTokens, aspectRatio },
+                    adjusted: adjusted,
+                    compatible: adjusted.compatible
+                };
+                
+                // 启用OCR按钮
+                document.getElementById('ocrButton').disabled = false;
+            };
+            img.src = dataUrl;
+        }
+        
+        function calculateAdjustedDimensions(originalWidth, originalHeight) {
+            let width = originalWidth;
+            let height = originalHeight;
+            let totalPixels = width * height;
+            let compatible = true;
+            let reason = '';
+            
+            // 检查宽高比
+            const aspectRatio = Math.max(width, height) / Math.min(width, height);
+            if (aspectRatio > DASHSCOPE_LIMITS.MAX_ASPECT_RATIO) {
+                compatible = false;
+                reason = `宽高比${aspectRatio.toFixed(1)}:1超过限制${DASHSCOPE_LIMITS.MAX_ASPECT_RATIO}:1`;
+            }
+            
+            // 如果超过最大像素数，按比例缩小
+            if (totalPixels > DASHSCOPE_LIMITS.MAX_PIXELS) {
+                const scale = Math.sqrt(DASHSCOPE_LIMITS.MAX_PIXELS / totalPixels);
+                width = Math.floor(originalWidth * scale);
+                height = Math.floor(originalHeight * scale);
+            }
+            
+            // 如果小于最小像素数，按比例放大
+            else if (totalPixels < DASHSCOPE_LIMITS.MIN_PIXELS) {
+                const scale = Math.sqrt(DASHSCOPE_LIMITS.MIN_PIXELS / totalPixels);
+                width = Math.ceil(originalWidth * scale);
+                height = Math.ceil(originalHeight * scale);
+            }
+            
+            // 调整为28的倍数
+            const adjustedWidth = Math.round(width / DASHSCOPE_LIMITS.GRID_SIZE) * DASHSCOPE_LIMITS.GRID_SIZE;
+            const adjustedHeight = Math.round(height / DASHSCOPE_LIMITS.GRID_SIZE) * DASHSCOPE_LIMITS.GRID_SIZE;
+            
+            // 确保调整后仍在范围内
+            const adjustedPixels = adjustedWidth * adjustedHeight;
+            if (adjustedPixels < DASHSCOPE_LIMITS.MIN_PIXELS || adjustedPixels > DASHSCOPE_LIMITS.MAX_PIXELS) {
+                const maxDimension = Math.floor(Math.sqrt(DASHSCOPE_LIMITS.MAX_PIXELS));
+                const finalWidth = Math.floor(maxDimension / DASHSCOPE_LIMITS.GRID_SIZE) * DASHSCOPE_LIMITS.GRID_SIZE;
+                const finalHeight = Math.floor(maxDimension / DASHSCOPE_LIMITS.GRID_SIZE) * DASHSCOPE_LIMITS.GRID_SIZE;
+                
+                return {
+                    width: finalWidth,
+                    height: finalHeight,
+                    pixels: finalWidth * finalHeight,
+                    tokens: Math.ceil((finalWidth * finalHeight) / DASHSCOPE_LIMITS.PIXEL_PER_TOKEN),
+                    compatible: compatible && !reason,
+                    reason: reason || (compatible ? '符合DashScope要求' : '需要调整')
+                };
+            }
+            
+            // 确保最小尺寸
+            const finalWidth = Math.max(DASHSCOPE_LIMITS.GRID_SIZE, adjustedWidth);
+            const finalHeight = Math.max(DASHSCOPE_LIMITS.GRID_SIZE, adjustedHeight);
+            const finalPixels = finalWidth * finalHeight;
+            const finalTokens = Math.ceil(finalPixels / DASHSCOPE_LIMITS.PIXEL_PER_TOKEN);
+            
+            return {
+                width: finalWidth,
+                height: finalHeight,
+                pixels: finalPixels,
+                tokens: finalTokens,
+                compatible: compatible && finalTokens >= DASHSCOPE_LIMITS.MIN_TOKENS && finalTokens <= DASHSCOPE_LIMITS.MAX_TOKENS && !reason,
+                reason: reason || (compatible ? '符合DashScope要求' : '需要调整')
+            };
+        }
+        
+        function updateAnalysisDisplay(width, height, pixels, tokens, aspectRatio, adjusted) {
+            // 更新基本信息
+            document.getElementById('originalSize').textContent = `${width}×${height}`;
+            document.getElementById('originalPixels').textContent = pixels.toLocaleString();
+            document.getElementById('estimatedTokens').textContent = tokens;
+            document.getElementById('aspectRatio').textContent = `${aspectRatio.toFixed(2)}:1`;
+            document.getElementById('adjustedSize').textContent = `${adjusted.width}×${adjusted.height}`;
+            document.getElementById('finalTokens').textContent = adjusted.tokens;
+            
+            // 更新Token卡片颜色
+            const tokenCard = document.getElementById('tokenCard');
+            const finalTokenCard = document.getElementById('finalTokenCard');
+            const aspectRatioCard = document.getElementById('aspectRatioCard');
+            
+            if (tokens < DASHSCOPE_LIMITS.MIN_TOKENS || tokens > DASHSCOPE_LIMITS.MAX_TOKENS) {
+                tokenCard.className = 'info-card danger';
+            } else {
+                tokenCard.className = 'info-card success';
+            }
+            
+            if (adjusted.tokens < DASHSCOPE_LIMITS.MIN_TOKENS || adjusted.tokens > DASHSCOPE_LIMITS.MAX_TOKENS) {
+                finalTokenCard.className = 'info-card danger';
+            } else {
+                finalTokenCard.className = 'info-card success';
+            }
+            
+            if (aspectRatio > DASHSCOPE_LIMITS.MAX_ASPECT_RATIO) {
+                aspectRatioCard.className = 'info-card danger';
+            } else if (aspectRatio > 10) {
+                aspectRatioCard.className = 'info-card warning';
+            } else {
+                aspectRatioCard.className = 'info-card success';
+            }
+            
+            // 更新状态信息
+            const statusMessage = document.getElementById('statusMessage');
+            const compatibilityProgress = document.getElementById('compatibilityProgress');
+            
+            if (adjusted.compatible) {
+                statusMessage.textContent = '✅ ' + adjusted.reason;
+                statusMessage.className = 'status-indicator status-success';
+                compatibilityProgress.style.width = '100%';
+            } else {
+                statusMessage.textContent = '❌ ' + adjusted.reason;
+                statusMessage.className = 'status-indicator status-danger';
+                compatibilityProgress.style.width = '30%';
+            }
+            
+            // 显示结果区域
+            document.getElementById('analysisResults').style.display = 'grid';
+            document.getElementById('statusInfo').style.display = 'block';
+        }
+        
+        async function testOCR() {
+            if (!currentImageFile) {
+                alert('请先选择图片！');
+                return;
+            }
+            
+            const resultArea = document.getElementById('resultArea');
+            const ocrButton = document.getElementById('ocrButton');
+            
+            ocrButton.disabled = true;
+            ocrButton.textContent = '🔍 识别中...';
+            
+            resultArea.style.display = 'block';
+            resultArea.textContent = '🚀 正在上传图片并进行OCR识别...\n';
+            
+            try {
+                const formData = new FormData();
+                formData.append('image', currentImageFile);
+                
+                const response = await fetch('http://localhost:3000/api/ocr/recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultArea.textContent += `✅ OCR识别成功！\n\n`;
+                    resultArea.textContent += `📊 图像处理信息：\n`;
+                    resultArea.textContent += `原始大小: ${(result.data.imageInfo.originalSize / 1024).toFixed(1)}KB\n`;
+                    resultArea.textContent += `压缩后大小: ${(result.data.imageInfo.compressedSize / 1024).toFixed(1)}KB\n`;
+                    resultArea.textContent += `最终尺寸: ${result.data.imageInfo.dimensions}\n`;
+                    resultArea.textContent += `像素总数: ${result.data.imageInfo.pixels.toLocaleString()}\n`;
+                    resultArea.textContent += `Token数量: ${result.data.imageInfo.tokens}\n\n`;
+                    
+                    resultArea.textContent += `💰 API使用统计：\n`;
+                    resultArea.textContent += `输入Token: ${result.data.usage.input_tokens || 0}\n`;
+                    resultArea.textContent += `输出Token: ${result.data.usage.output_tokens || 0}\n`;
+                    resultArea.textContent += `图像Token: ${result.data.usage.image_tokens || 0}\n`;
+                    resultArea.textContent += `总Token: ${result.data.usage.total_tokens || 0}\n\n`;
+                    
+                    resultArea.textContent += `📝 识别结果：\n`;
+                    resultArea.textContent += `${result.data.text}\n`;
+                } else {
+                    resultArea.textContent += `❌ OCR识别失败：${result.message}\n`;
+                }
+            } catch (error) {
+                resultArea.textContent += `❌ 请求失败：${error.message}\n`;
+            } finally {
+                ocrButton.disabled = false;
+                ocrButton.textContent = '🔍 测试OCR识别';
+            }
+        }
+        
+        function clearResults() {
+            currentImageFile = null;
+            analysisData = null;
+            
+            document.getElementById('previewContainer').style.display = 'none';
+            document.getElementById('analysisResults').style.display = 'none';
+            document.getElementById('statusInfo').style.display = 'none';
+            document.getElementById('resultArea').style.display = 'none';
+            document.getElementById('ocrButton').disabled = true;
+            document.getElementById('imageInput').value = '';
+        }
+    </script>
+</body>
+</html> 

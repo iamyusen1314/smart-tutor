@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 GitHub优化策略 - DashScope OCR测试工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .github-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-left: 4px solid #28a745;
+            margin: 20px;
+            border-radius: 8px;
+        }
+        
+        .github-info h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .github-info h3::before {
+            content: "🔍";
+            margin-right: 10px;
+        }
+        
+        .findings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .finding-card {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .finding-card h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .finding-card h4::before {
+            content: "📋";
+            margin-right: 8px;
+        }
+        
+        .finding-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .finding-card li {
+            padding: 5px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .finding-card li::before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .test-section {
+            padding: 30px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f8f9fa;
+        }
+        
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #e8f5e8;
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.2em;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .upload-hint {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .image-preview {
+            text-align: center;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .analysis-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .metric-value {
+            color: #667eea;
+            font-weight: 500;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-good {
+            background: #28a745;
+        }
+        
+        .status-warning {
+            background: #ffc107;
+        }
+        
+        .status-error {
+            background: #dc3545;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+        
+        .test-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-text {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Monaco', monospace;
+            line-height: 1.5;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .optimization-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        
+        .github-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .github-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 GitHub优化策略测试工具</h1>
+            <p>基于GitHub搜索发现的DashScope OCR优化方案</p>
+        </div>
+        
+        <div class="github-info">
+            <h3>GitHub搜索发现的关键信息</h3>
+            <div class="findings">
+                <div class="finding-card">
+                    <h4>官方Qwen-VL推荐</h4>
+                    <ul>
+                        <li>推荐分辨率：448×448像素</li>
+                        <li>比其他模型224×224更高</li>
+                        <li>促进细粒度文本识别</li>
+                        <li>更好的文档QA性能</li>
+                    </ul>
+                </div>
+                
+                <div class="finding-card">
+                    <h4>Token计算规则</h4>
+                    <ul>
+                        <li>每28×28像素 ≈ 1个Token</li>
+                        <li>最大约1,280个Token</li>
+                        <li>对应~100万像素限制</li>
+                        <li>尺寸会被调整为28的倍数</li>
+                    </ul>
+                </div>
+                
+                <div class="finding-card">
+                    <h4>社区反馈问题</h4>
+                    <ul>
+                        <li>ValidationError普遍存在</li>
+                        <li>"data inspection"错误</li>
+                        <li>图片大小限制严格</li>
+                        <li>需要激进压缩策略</li>
+                    </ul>
+                </div>
+                
+                <div class="finding-card">
+                    <h4>优化策略实现</h4>
+                    <ul>
+                        <li>目标尺寸：448×448</li>
+                        <li>最大文件：50KB</li>
+                        <li>自适应质量控制</li>
+                        <li>保持宽高比</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🧪 优化策略测试</h2>
+            
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">点击选择图片或拖拽到此处</div>
+                <div class="upload-hint">支持 JPG、PNG、WebP、BMP 格式，最大10MB</div>
+                <span class="optimization-badge">GitHub优化</span>
+            </div>
+            
+            <input type="file" id="fileInput" class="file-input" accept="image/*">
+            
+            <div class="results-grid" id="resultsGrid" style="display: none;">
+                <div class="image-preview">
+                    <h3>📸 图片预览</h3>
+                    <img id="previewImage" alt="预览图片">
+                </div>
+                
+                <div class="analysis-panel">
+                    <h3>📊 优化分析</h3>
+                    <div id="analysisResults">
+                        <div class="metric">
+                            <span class="metric-label">原始尺寸</span>
+                            <span class="metric-value" id="originalSize">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">原始像素数</span>
+                            <span class="metric-value" id="originalPixels">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">目标尺寸</span>
+                            <span class="metric-value" id="targetSize">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">预估Token数</span>
+                            <span class="metric-value" id="estimatedTokens">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">DashScope兼容性</span>
+                            <span class="metric-value" id="compatibility">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">优化策略</span>
+                            <span class="metric-value">GitHub发现的448×448策略</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="test-button" id="testButton" disabled>
+                🚀 测试OCR识别 (GitHub优化策略)
+            </button>
+            
+            <div class="result-text" id="resultText" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let imageAnalysis = null;
+
+        // 文件上传处理
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.querySelector('.upload-area');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const previewImage = document.getElementById('previewImage');
+        const testButton = document.getElementById('testButton');
+        const resultText = document.getElementById('resultText');
+
+        // 拖拽处理
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件！');
+                return;
+            }
+
+            selectedFile = file;
+            
+            // 显示预览
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                resultsGrid.style.display = 'grid';
+                analyzeImage(file, e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function analyzeImage(file, dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                const originalWidth = img.width;
+                const originalHeight = img.height;
+                const originalPixels = originalWidth * originalHeight;
+                
+                // 基于GitHub发现的优化策略计算
+                const targetPixels = 448 * 448; // 官方推荐尺寸
+                const maxPixels = 1000000; // 约100万像素限制
+                
+                let targetWidth, targetHeight;
+                
+                if (originalPixels <= targetPixels) {
+                    targetWidth = originalWidth;
+                    targetHeight = originalHeight;
+                } else {
+                    const aspectRatio = originalWidth / originalHeight;
+                    if (aspectRatio > 1) {
+                        targetWidth = 448;
+                        targetHeight = Math.round(448 / aspectRatio);
+                    } else {
+                        targetHeight = 448;
+                        targetWidth = Math.round(448 * aspectRatio);
+                    }
+                }
+                
+                const finalPixels = targetWidth * targetHeight;
+                const estimatedTokens = Math.ceil(finalPixels / (28 * 28));
+                
+                // 更新UI
+                document.getElementById('originalSize').textContent = `${originalWidth}×${originalHeight}`;
+                document.getElementById('originalPixels').textContent = originalPixels.toLocaleString();
+                document.getElementById('targetSize').textContent = `${targetWidth}×${targetHeight}`;
+                document.getElementById('estimatedTokens').textContent = estimatedTokens;
+                
+                // 兼容性检查
+                const compatibilityEl = document.getElementById('compatibility');
+                if (finalPixels <= maxPixels && estimatedTokens <= 1280) {
+                    compatibilityEl.innerHTML = '<span class="status-indicator status-good"></span>优秀 (符合限制)';
+                } else if (finalPixels <= maxPixels * 1.2) {
+                    compatibilityEl.innerHTML = '<span class="status-indicator status-warning"></span>警告 (接近限制)';
+                } else {
+                    compatibilityEl.innerHTML = '<span class="status-indicator status-error"></span>超限 (需要压缩)';
+                }
+                
+                imageAnalysis = {
+                    originalWidth,
+                    originalHeight,
+                    originalPixels,
+                    targetWidth,
+                    targetHeight,
+                    finalPixels,
+                    estimatedTokens
+                };
+                
+                testButton.disabled = false;
+            };
+            img.src = dataUrl;
+        }
+
+        // OCR测试
+        testButton.addEventListener('click', async () => {
+            if (!selectedFile) {
+                alert('请先选择图片！');
+                return;
+            }
+
+            testButton.disabled = true;
+            testButton.innerHTML = '<span class="loading"></span>正在识别中...';
+            resultText.style.display = 'block';
+            resultText.textContent = '🔄 正在使用GitHub优化策略进行OCR识别...\n';
+
+            try {
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+
+                const response = await fetch('http://localhost:3000/api/ocr/recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultText.textContent = `✅ 识别成功！\n\n📝 识别结果：\n${result.data.text}\n\n📊 统计信息：\n` +
+                        `模型：${result.data.model}\n` +
+                        `置信度：${result.data.confidence}\n` +
+                        `Token使用：输入${result.data.tokens_used.input} + 输出${result.data.tokens_used.output} = 总计${result.data.tokens_used.total}\n\n` +
+                        `🎯 优化信息：\n` +
+                        `策略：${result.meta.strategy}\n` +
+                        `原始大小：${(result.meta.image_info.original_size / 1024).toFixed(1)}KB\n` +
+                        `压缩后：${(result.meta.image_info.compressed_size / 1024).toFixed(1)}KB\n` +
+                        `压缩率：${result.meta.image_info.compression_ratio}\n` +
+                        `请求ID：${result.meta.request_id}`;
+                } else {
+                    resultText.textContent = `❌ 识别失败：${result.error}\n\n详细信息：${result.details || '无'}`;
+                }
+
+            } catch (error) {
+                resultText.textContent = `❌ 请求失败：${error.message}`;
+            }
+
+            testButton.disabled = false;
+            testButton.innerHTML = '🚀 测试OCR识别 (GitHub优化策略)';
+        });
+
+        // 页面加载时检查服务状态
+        async function checkServiceStatus() {
+            try {
+                const response = await fetch('http://localhost:3000/api/ocr/status');
+                const status = await response.json();
+                console.log('📊 服务状态:', status);
+            } catch (error) {
+                console.error('⚠️ 无法连接到OCR服务:', error);
+            }
+        }
+
+        checkServiceStatus();
+    </script>
+</body>
+</html> 

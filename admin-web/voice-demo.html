@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎙️ 真实语音功能演示与配置</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .title {
+            text-align: center;
+            color: #4A90E2;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #28a745;
+        }
+        .config-section {
+            background: #fff3cd;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #ffc107;
+        }
+        .demo-section {
+            background: #d1ecf1;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #17a2b8;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .record-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            font-size: 20px;
+            padding: 15px 30px;
+            border-radius: 50px;
+        }
+        .play-btn {
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .alert-warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .alert-danger { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .alert-info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .progress {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 20px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        #voiceResults {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .result-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #4A90E2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🎙️ 语音功能配置与演示</h1>
+        
+        <!-- 状态检查 -->
+        <div class="status-card">
+            <h3>📊 语音服务状态</h3>
+            <div id="serviceStatus">检查中...</div>
+            <button class="btn" onclick="checkServiceStatus()">🔄 刷新状态</button>
+        </div>
+
+        <!-- 配置说明 -->
+        <div class="config-section">
+            <h3>⚙️ 配置真实语音功能</h3>
+            <div class="alert alert-warning">
+                <strong>当前状态：</strong> 语音功能运行在<strong>模拟模式</strong>下
+            </div>
+            <p><strong>要启用真实的语音识别和合成功能，请按以下步骤配置：</strong></p>
+            <ol>
+                <li><strong>获取阿里云API密钥：</strong>
+                    <ul>
+                        <li>登录 <a href="https://dashscope.console.aliyun.com/" target="_blank">阿里云DashScope控制台</a></li>
+                        <li>创建API密钥（类似 sk-xxxxxxxxxxxxxxxxxxxx 格式）</li>
+                    </ul>
+                </li>
+                <li><strong>配置环境变量：</strong>
+                    <div class="code-block">
+# 在 server/.env 文件中添加：
+DASHSCOPE_API_KEY=your_real_api_key_here
+                    </div>
+                </li>
+                <li><strong>重启服务器：</strong>
+                    <div class="code-block">
+cd server && npm start
+                    </div>
+                </li>
+            </ol>
+        </div>
+
+        <!-- 演示区域 -->
+        <div class="demo-section">
+            <h3>🎮 语音功能演示</h3>
+            <div class="grid">
+                <div>
+                    <h4>🎤 语音识别测试</h4>
+                    <button id="recordBtn" class="btn record-btn" onclick="toggleRecording()">
+                        🎙️ 开始录音
+                    </button>
+                    <div class="progress">
+                        <div id="recordProgress" class="progress-bar" style="width: 0%">0%</div>
+                    </div>
+                    <div id="recognitionResult" class="alert alert-info" style="display: none;"></div>
+                </div>
+                <div>
+                    <h4>🔊 语音合成测试</h4>
+                    <input type="text" id="ttsText" placeholder="输入要合成的文字..." 
+                           style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 10px;"
+                           value="你好小朋友，我是AI老师，很高兴为你答疑解惑！">
+                    <br>
+                    <button class="btn play-btn" onclick="testTTS()">🔊 合成并播放</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 即时语音聊天演示 -->
+        <div class="demo-section">
+            <h3>💬 即时语音聊天演示</h3>
+            <button class="btn" onclick="startInstantChat()" style="background: linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%);">
+                🎯 开始即时语音聊天
+            </button>
+            <div id="chatProgress" class="progress" style="display: none;">
+                <div id="chatProgressBar" class="progress-bar" style="width: 0%">准备中...</div>
+            </div>
+            <div id="chatResult" style="display: none;"></div>
+        </div>
+
+        <!-- 测试结果 -->
+        <div class="status-card">
+            <h3>📋 测试结果</h3>
+            <div id="voiceResults"></div>
+            <button class="btn" onclick="clearResults()">🗑️ 清空结果</button>
+        </div>
+
+        <!-- 问题解决 -->
+        <div class="config-section">
+            <h3>🔧 常见问题解决</h3>
+            <details>
+                <summary>❓ 为什么录音内容和显示文字不一致？</summary>
+                <p>这是因为当前运行在<strong>模拟模式</strong>下。模拟模式会随机返回预设的文本，而不是真实识别您的语音内容。配置真实API密钥后即可解决。</p>
+            </details>
+            <details>
+                <summary>❓ 为什么AI没有语音回复？</summary>
+                <p>模拟模式下AI回复只是模拟播放，没有真实的音频。配置阿里云API密钥后，AI会生成真实的语音回复。</p>
+            </details>
+            <details>
+                <summary>❓ 如何验证语音功能是否正常工作？</summary>
+                <p>使用上方的测试工具，如果显示 "provider: alibaba-cloud" 则表示真实API正在工作，如果显示 "provider: mock" 则表示模拟模式。</p>
+            </details>
+        </div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let recordingTimer = null;
+
+        // 检查服务状态
+        async function checkServiceStatus() {
+            try {
+                const response = await fetch('/api/speech/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const status = data.data;
+                    document.getElementById('serviceStatus').innerHTML = `
+                        <div class="alert ${status.configured ? 'alert-success' : 'alert-warning'}">
+                            <strong>配置状态：</strong> ${status.configured ? '✅ 已配置真实API' : '⚠️ 模拟模式'}
+                        </div>
+                        <p><strong>语音识别：</strong> ${status.speechRecognition.provider} (${status.speechRecognition.model})</p>
+                        <p><strong>语音合成：</strong> ${status.speechSynthesis.provider} (${status.speechSynthesis.model})</p>
+                        <p><strong>支持的声音：</strong> ${status.speechSynthesis.supportedVoices.map(v => v.name).join(', ')}</p>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('serviceStatus').innerHTML = `
+                    <div class="alert alert-danger">❌ 无法连接到语音服务</div>
+                `;
+            }
+        }
+
+        // 录音功能
+        async function toggleRecording() {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        function startRecording() {
+            isRecording = true;
+            document.getElementById('recordBtn').textContent = '🛑 停止录音';
+            document.getElementById('recognitionResult').style.display = 'none';
+            
+            let progress = 0;
+            recordingTimer = setInterval(() => {
+                progress += 2;
+                document.getElementById('recordProgress').style.width = `${Math.min(progress, 100)}%`;
+                document.getElementById('recordProgress').textContent = `录音中... ${Math.min(progress, 100)}%`;
+                
+                if (progress >= 100) {
+                    stopRecording();
+                }
+            }, 100);
+
+            addResult('录音', '开始录音...', 'info');
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            document.getElementById('recordBtn').textContent = '🎙️ 开始录音';
+            clearInterval(recordingTimer);
+            
+            document.getElementById('recordProgress').style.width = '100%';
+            document.getElementById('recordProgress').textContent = '处理中...';
+            
+            // 模拟语音识别
+            setTimeout(async () => {
+                try {
+                    const response = await fetch('/api/speech/recognize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            audioData: 'mock_audio_data_for_demo'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const result = data.data;
+                        document.getElementById('recognitionResult').style.display = 'block';
+                        document.getElementById('recognitionResult').innerHTML = `
+                            <strong>识别结果：</strong> "${result.text}"<br>
+                            <strong>置信度：</strong> ${(result.confidence * 100).toFixed(1)}%<br>
+                            <strong>提供商：</strong> ${result.provider}<br>
+                            <strong>响应时间：</strong> ${result.responseTime}ms
+                        `;
+                        
+                        addResult('语音识别', `"${result.text}" (${result.provider})`, 'success');
+                    }
+                } catch (error) {
+                    addResult('语音识别', '识别失败: ' + error.message, 'danger');
+                }
+                
+                document.getElementById('recordProgress').style.width = '0%';
+                document.getElementById('recordProgress').textContent = '0%';
+            }, 1000);
+        }
+
+        // 语音合成测试
+        async function testTTS() {
+            const text = document.getElementById('ttsText').value.trim();
+            
+            if (!text) {
+                alert('请输入要合成的文字');
+                return;
+            }
+
+            addResult('语音合成', `合成文本: "${text}"`, 'info');
+
+            try {
+                const response = await fetch('/api/speech/synthesis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        voice: 'xiaoyun',
+                        speed: 1.0
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const result = data.data;
+                    addResult('语音合成', `合成成功 (${result.provider}) - 时长: ${result.duration}s`, 'success');
+                    
+                    // 如果是真实音频数据，尝试播放
+                    if (result.audioData && !result.audioData.startsWith('mock_')) {
+                        addResult('音频播放', '播放真实语音...', 'info');
+                        // 这里可以添加真实的音频播放逻辑
+                    } else {
+                        addResult('音频播放', '模拟播放语音 (配置真实API密钥后可听到声音)', 'warning');
+                    }
+                } else {
+                    addResult('语音合成', '合成失败: ' + data.message, 'danger');
+                }
+            } catch (error) {
+                addResult('语音合成', '合成失败: ' + error.message, 'danger');
+            }
+        }
+
+        // 即时语音聊天
+        async function startInstantChat() {
+            const chatProgress = document.getElementById('chatProgress');
+            const chatProgressBar = document.getElementById('chatProgressBar');
+            const chatResult = document.getElementById('chatResult');
+            
+            chatProgress.style.display = 'block';
+            chatResult.style.display = 'none';
+            
+            addResult('即时语音聊天', '开始完整的语音聊天流程...', 'info');
+
+            // 模拟完整流程
+            const steps = [
+                { progress: 20, text: '录音中...', delay: 1000 },
+                { progress: 40, text: '语音识别中...', delay: 1500 },
+                { progress: 70, text: 'AI处理中...', delay: 2000 },
+                { progress: 90, text: '语音合成中...', delay: 1000 },
+                { progress: 100, text: '播放回复...', delay: 1500 }
+            ];
+
+            for (const step of steps) {
+                chatProgressBar.style.width = `${step.progress}%`;
+                chatProgressBar.textContent = step.text;
+                await new Promise(resolve => setTimeout(resolve, step.delay));
+            }
+
+            // 显示结果
+            chatResult.style.display = 'block';
+            chatResult.innerHTML = `
+                <div class="alert alert-success">
+                    <h4>✅ 即时语音聊天完成</h4>
+                    <p><strong>学生输入：</strong> "老师，这道数学题我不会做"</p>
+                    <p><strong>AI回复：</strong> "别担心，让我来帮你分析这道题的解题思路..."</p>
+                    <p><strong>说明：</strong> 当前为演示模式，配置真实API后可实现完整的语音交互</p>
+                </div>
+            `;
+
+            setTimeout(() => {
+                chatProgress.style.display = 'none';
+            }, 500);
+
+            addResult('即时语音聊天', '完整流程演示完成', 'success');
+        }
+
+        // 添加测试结果
+        function addResult(type, message, status) {
+            const results = document.getElementById('voiceResults');
+            const item = document.createElement('div');
+            item.className = 'result-item';
+            item.innerHTML = `
+                <strong>[${new Date().toLocaleTimeString()}] ${type}:</strong> 
+                <span class="text-${status}">${message}</span>
+            `;
+            results.appendChild(item);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        // 清空结果
+        function clearResults() {
+            document.getElementById('voiceResults').innerHTML = '';
+        }
+
+        // 页面加载时检查状态
+        checkServiceStatus();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,45 @@
+{
+  "description": "小学AI家教小程序",
+  "miniprogramRoot": "miniprogram/",
+  "libVersion": "3.8.7",
+  "projectname": "smart_tutor",
+  "setting": {
+    "urlCheck": false,
+    "coverView": true,
+    "lazyloadPlaceholderEnable": false,
+    "skylineRenderEnable": false,
+    "preloadBackgroundData": false,
+    "autoAudits": false,
+    "showShadowRootInWxmlPanel": true,
+    "compileHotReLoad": true,
+    "useStaticServer": false,
+    "useLanDebug": false,
+    "showES6CompileOption": false,
+    "checkInvalidKey": true,
+    "ignoreDevUnusedFiles": true,
+    "bigPackageSizeSupport": false,
+    "useIsolateContext": false,
+    "useApiHook": true,
+    "useApiHostProcess": true
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/ai-chat/ai-chat",
+          "pathName": "pages/ai-chat/ai-chat",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "/pages/debug/ai-debug",
+          "pathName": "/pages/debug/ai-debug",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        }
+      ]
+    }
+  }
+}

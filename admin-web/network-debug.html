@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络连接调试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        .status {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .testing { color: #ffc107; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .results {
+            background: #e9ecef;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .section {
+            margin: 30px 0;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .recommendation {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 网络连接调试工具</h1>
+        <p>这个工具用于诊断小程序与后端服务器的连接问题</p>
+
+        <div class="section">
+            <h2>1. 基础连接测试</h2>
+            <div class="test-item">
+                <strong>测试 localhost:3000</strong>
+                <span id="localhost-status" class="status">待测试</span>
+                <button onclick="testConnection('http://localhost:3000/health', 'localhost-status')">测试</button>
+            </div>
+            <div class="test-item">
+                <strong>测试 192.168.2.120:3000</strong>
+                <span id="localip-status" class="status">待测试</span>
+                <button onclick="testConnection('http://192.168.2.120:3000/health', 'localip-status')">测试</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>2. API接口测试</h2>
+            <div class="test-item">
+                <strong>测试 OCR 状态接口</strong>
+                <span id="ocr-status" class="status">待测试</span>
+                <button onclick="testConnection('http://192.168.2.120:3000/api/ocr/status', 'ocr-status')">测试</button>
+            </div>
+            <div class="test-item">
+                <strong>测试语音服务状态</strong>
+                <span id="speech-status" class="status">待测试</span>
+                <button onclick="testConnection('http://192.168.2.120:3000/api/speech/status', 'speech-status')">测试</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>3. 全面测试</h2>
+            <button onclick="runFullTest()">运行所有测试</button>
+            <div id="results" class="results" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>4. 微信开发者工具配置建议</h2>
+            <div class="recommendation">
+                <h3>🔧 如果连接失败，请检查以下设置：</h3>
+                <ol>
+                    <li><strong>微信开发者工具</strong> → 右上角 "详情" → "本地设置" → 勾选 "不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书"</li>
+                    <li><strong>确保后端服务器正在运行</strong>：在终端执行 <code>cd server && npm start</code></li>
+                    <li><strong>检查防火墙设置</strong>：确保端口3000未被防火墙阻止</li>
+                    <li><strong>重启微信开发者工具</strong>：修改设置后需要重启工具</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>5. 常见问题解决</h2>
+            <div class="recommendation">
+                <h3>错误："request:fail timeout"</h3>
+                <ul>
+                    <li>检查后端服务器是否运行在正确的端口</li>
+                    <li>确认网络连接正常</li>
+                    <li>微信开发者工具的网络设置</li>
+                </ul>
+                
+                <h3>错误："request:fail url not in domain list"</h3>
+                <ul>
+                    <li>在微信开发者工具中关闭域名校验</li>
+                    <li>或者配置合法域名（正式发布时需要）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testConnection(url, statusId) {
+            const statusEl = document.getElementById(statusId);
+            statusEl.textContent = '测试中...';
+            statusEl.className = 'status testing';
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'ok') {
+                    statusEl.textContent = '✅ 连接成功';
+                    statusEl.className = 'status success';
+                } else {
+                    statusEl.textContent = '❌ 响应异常: ' + response.status;
+                    statusEl.className = 'status error';
+                }
+            } catch (error) {
+                statusEl.textContent = '❌ 连接失败: ' + error.message;
+                statusEl.className = 'status error';
+            }
+        }
+
+        async function runFullTest() {
+            const resultsEl = document.getElementById('results');
+            resultsEl.style.display = 'block';
+            resultsEl.textContent = '开始全面测试...\n\n';
+            
+            const tests = [
+                { name: 'Localhost Health', url: 'http://localhost:3000/health' },
+                { name: 'Local IP Health', url: 'http://192.168.2.120:3000/health' },
+                { name: 'OCR Status', url: 'http://192.168.2.120:3000/api/ocr/status' },
+                { name: 'Speech Status', url: 'http://192.168.2.120:3000/api/speech/status' }
+            ];
+            
+            for (const test of tests) {
+                try {
+                    resultsEl.textContent += `测试 ${test.name}...\n`;
+                    const startTime = Date.now();
+                    const response = await fetch(test.url);
+                    const endTime = Date.now();
+                    const data = await response.json();
+                    
+                    resultsEl.textContent += `✅ ${test.name}: ${response.status} (${endTime - startTime}ms)\n`;
+                    resultsEl.textContent += `   响应: ${JSON.stringify(data, null, 2)}\n\n`;
+                } catch (error) {
+                    resultsEl.textContent += `❌ ${test.name}: ${error.message}\n\n`;
+                }
+            }
+            
+            resultsEl.textContent += '测试完成！';
+        }
+
+        // 页面加载时自动检测IP地址
+        window.onload = function() {
+            console.log('网络调试页面已加载');
+            // 可以在这里添加自动检测逻辑
+        }
+    </script>
+</body>
+</html> 

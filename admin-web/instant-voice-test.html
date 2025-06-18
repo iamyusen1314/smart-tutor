@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎤 即时语音聊天功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 10px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .record-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            border: none;
+            color: white;
+            font-size: 2em;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .record-btn.recording {
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 即时语音聊天功能测试</h1>
+            <p>测试阿里云语音识别、语音合成和即时语音聊天功能</p>
+        </div>
+        
+        <!-- 1. 语音识别测试 -->
+        <div class="test-section">
+            <h2>🎤 语音识别测试</h2>
+            <p>测试语音转文字功能</p>
+            
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <button class="record-btn" id="recordBtn" onclick="toggleRecording()">🎙️</button>
+                <div>
+                    <div>状态：<span id="recordStatus">准备录音</span></div>
+                    <div>时长：<span id="recordTime">00:00</span></div>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="testSpeechRecognition()">🚀 开始识别</button>
+            
+            <div class="result" id="asrResult" style="display: none;"></div>
+        </div>
+        
+        <!-- 2. 语音合成测试 -->
+        <div class="test-section">
+            <h2>🔊 语音合成测试</h2>
+            <p>测试文字转语音功能</p>
+            
+            <div class="form-group">
+                <label>要合成的文本：</label>
+                <textarea id="ttsText" rows="3">你好，我是AI小老师！今天我们一起来学习数学吧！9加1等于多少呢？</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>选择音色：</label>
+                <select id="voiceType">
+                    <option value="xiaoyun">小云 - 温柔的小女孩声音</option>
+                    <option value="xiaoyu">小雨 - 清晰的女性声音</option>
+                    <option value="xiaoming">小明 - 活泼的小男孩声音</option>
+                </select>
+            </div>
+            
+            <button class="btn" onclick="testSpeechSynthesis()">🎵 生成语音</button>
+            
+            <div class="result" id="ttsResult" style="display: none;"></div>
+            <audio id="ttsAudio" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
+        </div>
+        
+        <!-- 3. 即时语音聊天测试 -->
+        <div class="test-section">
+            <h2>💬 即时语音聊天测试</h2>
+            <p>测试完整的即时语音聊天流程</p>
+            
+            <div class="form-group">
+                <label>模拟题目：</label>
+                <input type="text" id="chatQuestion" value="9 + 1 = ?">
+            </div>
+            
+            <div class="form-group">
+                <label>年级：</label>
+                <select id="chatGrade">
+                    <option value="1">一年级</option>
+                    <option value="2">二年级</option>
+                    <option value="3">三年级</option>
+                </select>
+            </div>
+            
+            <button class="btn" onclick="testInstantVoiceChat()">🚀 开始即时语音聊天</button>
+            
+            <div class="result" id="chatResult" style="display: none;"></div>
+        </div>
+        
+        <!-- 4. 服务状态检查 -->
+        <div class="test-section">
+            <h2>📊 服务状态检查</h2>
+            <button class="btn" onclick="checkServiceStatus()">🔍 检查服务状态</button>
+            
+            <div class="result" id="statusResult" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let recordingStartTime = 0;
+
+        // 切换录音状态
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        // 开始录音
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    window.currentAudioBlob = audioBlob;
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                recordingStartTime = Date.now();
+                
+                document.getElementById('recordBtn').classList.add('recording');
+                document.getElementById('recordBtn').textContent = '🛑';
+                document.getElementById('recordStatus').textContent = '正在录音...';
+                
+                // 开始计时
+                updateRecordingTime();
+                
+            } catch (error) {
+                alert('录音权限被拒绝，请允许浏览器访问麦克风');
+            }
+        }
+
+        // 停止录音
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                
+                document.getElementById('recordBtn').classList.remove('recording');
+                document.getElementById('recordBtn').textContent = '🎙️';
+                document.getElementById('recordStatus').textContent = '录音完成';
+            }
+        }
+
+        // 更新录音时间
+        function updateRecordingTime() {
+            if (isRecording) {
+                const elapsed = Date.now() - recordingStartTime;
+                const seconds = Math.floor(elapsed / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                
+                document.getElementById('recordTime').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+                
+                setTimeout(updateRecordingTime, 100);
+            }
+        }
+
+        // 测试语音识别
+        async function testSpeechRecognition() {
+            if (!window.currentAudioBlob) {
+                alert('请先录音');
+                return;
+            }
+
+            showResult('asrResult', '正在识别语音，请稍候...');
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', window.currentAudioBlob, 'audio.mp3');
+
+                const response = await fetch('/api/speech/recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                showResult('asrResult', JSON.stringify(result, null, 2));
+
+            } catch (error) {
+                showResult('asrResult', `❌ 错误：${error.message}`);
+            }
+        }
+
+        // 测试语音合成
+        async function testSpeechSynthesis() {
+            const text = document.getElementById('ttsText').value.trim();
+            if (!text) {
+                alert('请输入要合成的文本');
+                return;
+            }
+
+            showResult('ttsResult', '正在生成语音，请稍候...');
+
+            try {
+                const response = await fetch('/api/speech/synthesis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        voice: document.getElementById('voiceType').value,
+                        speed: 1.0
+                    })
+                });
+
+                const result = await response.json();
+                showResult('ttsResult', JSON.stringify(result, null, 2));
+                
+                // 如果有音频数据，尝试播放
+                if (result.success && result.data.audioUrl) {
+                    const audioElement = document.getElementById('ttsAudio');
+                    audioElement.src = result.data.audioUrl;
+                    audioElement.style.display = 'block';
+                }
+
+            } catch (error) {
+                showResult('ttsResult', `❌ 错误：${error.message}`);
+            }
+        }
+
+        // 测试即时语音聊天
+        async function testInstantVoiceChat() {
+            if (!window.currentAudioBlob) {
+                alert('请先录音');
+                return;
+            }
+
+            showResult('chatResult', '正在处理即时语音聊天，请稍候...');
+
+            try {
+                // 转换音频为base64
+                const audioData = await blobToBase64(window.currentAudioBlob);
+                
+                const response = await fetch('/api/speech/instant-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        audioData: audioData.split(',')[1], // 移除data:前缀
+                        question: document.getElementById('chatQuestion').value,
+                        grade: document.getElementById('chatGrade').value,
+                        subject: 'math'
+                    })
+                });
+
+                const result = await response.json();
+                showResult('chatResult', JSON.stringify(result, null, 2));
+                
+                // 如果有音频回复，尝试播放
+                if (result.success && result.data.audioUrl) {
+                    setTimeout(() => {
+                        const audio = new Audio(result.data.audioUrl);
+                        audio.play().catch(e => console.log('自动播放被阻止'));
+                    }, 1000);
+                }
+
+            } catch (error) {
+                showResult('chatResult', `❌ 错误：${error.message}`);
+            }
+        }
+
+        // 检查服务状态
+        async function checkServiceStatus() {
+            showResult('statusResult', '正在检查服务状态...');
+
+            try {
+                const response = await fetch('/api/speech/status');
+                const result = await response.json();
+                showResult('statusResult', JSON.stringify(result, null, 2));
+
+            } catch (error) {
+                showResult('statusResult', `❌ 错误：${error.message}`);
+            }
+        }
+
+        // 显示结果
+        function showResult(containerId, content) {
+            const container = document.getElementById(containerId);
+            container.style.display = 'block';
+            container.textContent = content;
+        }
+
+        // 转换Blob为Base64
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // 页面加载时检查服务状态
+        window.addEventListener('load', () => {
+            console.log('🎤 即时语音聊天功能测试页面已加载');
+            checkServiceStatus();
+        });
+    </script>
+</body>
+</html> 

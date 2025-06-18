@@ -1,0 +1,165 @@
+{
+  "server": {
+    "port": 3000,
+    "host": "0.0.0.0",
+    "env": "development"
+  },
+  "database": {
+    "mongodb": {
+      "uri": "mongodb://localhost:27017/smart_tutor",
+      "options": {
+        "useNewUrlParser": true,
+        "useUnifiedTopology": true,
+        "maxPoolSize": 10,
+        "serverSelectionTimeoutMS": 5000,
+        "socketTimeoutMS": 45000,
+        "bufferMaxEntries": 0
+      }
+    },
+    "redis": {
+      "host": "localhost",
+      "port": 6379,
+      "password": "",
+      "db": 0,
+      "keyPrefix": "smart_tutor:",
+      "connectTimeout": 10000,
+      "commandTimeout": 5000,
+      "retryDelayOnFailover": 100,
+      "maxRetriesPerRequest": 3
+    }
+  },
+  "jwt": {
+    "secret": "your-super-secret-jwt-key-change-in-production",
+    "expiresIn": "7d",
+    "refreshExpiresIn": "30d",
+    "issuer": "smart-tutor",
+    "audience": "smart-tutor-users"
+  },
+  "security": {
+    "bcryptRounds": 12,
+    "rateLimitMax": 100,
+    "rateLimitWindowMs": 900000,
+    "maxFileSize": "10mb",
+    "allowedImageTypes": ["image/jpeg", "image/png", "image/webp"],
+    "corsOrigins": [
+      "https://servicewechat.com",
+      "http://localhost:3000",
+      "https://dev.smarttutor.com",
+      "https://smarttutor.com"
+    ]
+  },
+  "thirdParty": {
+    "wechat": {
+      "appId": "your-wechat-appid",
+      "appSecret": "your-wechat-appsecret",
+      "mchId": "your-wechat-mchid",
+      "apiKey": "your-wechat-apikey"
+    },
+    "sms": {
+      "provider": "aliyun",
+      "accessKeyId": "your-aliyun-access-key-id",
+      "accessKeySecret": "your-aliyun-access-key-secret",
+      "signName": "小学AI家教",
+      "templateCode": "SMS_123456789",
+      "dailyLimit": 10,
+      "hourlyLimit": 3
+    },
+    "ocr": {
+      "provider": "qwen-vl-max",
+      "apiKey": "your-dashscope-api-key",
+      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "model": "qwen-vl-max",
+      "timeout": 60000,
+      "retryTimes": 3
+    },
+    "ai": {
+      "provider": "openai",
+      "apiKey": "your-openai-api-key",
+      "baseURL": "https://api.openai.com/v1",
+      "model": "gpt-3.5-turbo",
+      "maxTokens": 1000,
+      "temperature": 0.7,
+      "timeout": 30000,
+      "retryTimes": 3
+    },
+    "storage": {
+      "provider": "local",
+      "local": {
+        "uploadPath": "./uploads",
+        "publicPath": "/static/uploads"
+      },
+      "oss": {
+        "accessKeyId": "your-oss-access-key-id",
+        "accessKeySecret": "your-oss-access-key-secret",
+        "bucket": "smart-tutor",
+        "region": "oss-cn-hangzhou",
+        "domain": "https://smart-tutor.oss-cn-hangzhou.aliyuncs.com"
+      }
+    }
+  },
+  "logging": {
+    "level": "info",
+    "file": {
+      "enabled": true,
+      "filename": "logs/app.log",
+      "maxsize": "10m",
+      "maxFiles": "14d",
+      "compress": true
+    },
+    "console": {
+      "enabled": true,
+      "colorize": true
+    }
+  },
+  "cache": {
+    "defaultTTL": 3600,
+    "smsCodeTTL": 300,
+    "userSessionTTL": 86400,
+    "ocrResultTTL": 7200,
+    "aiResponseTTL": 3600
+  },
+  "business": {
+    "smsCode": {
+      "length": 6,
+      "expiresIn": 300,
+      "resendInterval": 60
+    },
+    "pagination": {
+      "defaultLimit": 20,
+      "maxLimit": 100
+    },
+    "upload": {
+      "maxFileSize": "5mb",
+      "allowedTypes": ["image/jpeg", "image/png", "image/webp"],
+      "imageSizes": {
+        "thumbnail": { "width": 200, "height": 200 },
+        "medium": { "width": 800, "height": 600 },
+        "large": { "width": 1200, "height": 900 }
+      }
+    },
+    "ocr": {
+      "maxImageSize": "5mb",
+      "supportedFormats": ["jpg", "png", "jpeg", "webp"],
+      "maxRetries": 3,
+      "timeout": 30000
+    },
+    "ai": {
+      "maxHistoryLength": 10,
+      "maxQuestionLength": 1000,
+      "responseTimeout": 30000,
+      "subjects": ["math", "chinese", "english"],
+      "grades": [1, 2, 3, 4, 5, 6]
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "healthCheck": {
+      "interval": 30000,
+      "timeout": 5000
+    },
+    "metrics": {
+      "enabled": true,
+      "endpoint": "/metrics"
+    }
+  }
+} 

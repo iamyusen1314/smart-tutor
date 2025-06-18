@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎙️ 语音功能配置指南</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .title {
+            text-align: center;
+            color: #4A90E2;
+            margin-bottom: 30px;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .alert-warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .alert-info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .code {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .btn {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover { background: #357abd; }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border-left: 4px solid #4A90E2;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🎙️ 即时语音聊天功能配置</h1>
+        
+        <div class="alert alert-warning">
+            <strong>⚠️ 当前状态：模拟模式</strong><br>
+            您发现的问题完全正确：录音内容与显示文字不一致，AI也没有真实语音回复。
+            这是因为当前语音功能运行在模拟模式下。
+        </div>
+
+        <div class="section">
+            <h2>🔍 问题分析</h2>
+            <h3>1. 语音识别问题</h3>
+            <p>当前系统随机返回以下预设文本之一：</p>
+            <div class="code">
+'我不知道怎么算'
+'老师能帮帮我吗' 
+'我需要提示'
+'这道题好难'
+'我想再试一次'
+...</div>
+            
+            <h3>2. 语音合成问题</h3>
+            <p>AI回复只是模拟播放，没有真实音频生成</p>
+            
+            <h3>3. 根本原因</h3>
+            <p>缺少阿里云DashScope API密钥配置</p>
+        </div>
+
+        <div class="section">
+            <h2>🔧 解决方案</h2>
+            
+            <h3>步骤1：获取阿里云API密钥</h3>
+            <ol>
+                <li>访问 <a href="https://dashscope.console.aliyun.com/" target="_blank">阿里云DashScope控制台</a></li>
+                <li>注册/登录账户</li>
+                <li>创建API密钥（格式类似：sk-xxxxxxxxxxxxxxxx）</li>
+                <li>记录您的API密钥</li>
+            </ol>
+
+            <h3>步骤2：配置环境变量</h3>
+            <p>在服务器根目录创建或编辑 <code>server/.env</code> 文件：</p>
+            <div class="code">
+# 在 server/.env 文件中添加
+DASHSCOPE_API_KEY=您的真实API密钥
+
+# 示例：
+# DASHSCOPE_API_KEY=sk-1234567890abcdef
+            </div>
+
+            <h3>步骤3：重启服务器</h3>
+            <div class="code">
+cd server
+npm start
+            </div>
+
+            <h3>步骤4：验证配置</h3>
+            <button class="btn" onclick="checkStatus()">🔍 检查语音服务状态</button>
+            <div id="statusResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>🎮 测试语音功能</h2>
+            <p>配置完成后，您可以测试以下功能：</p>
+            
+            <h3>语音识别测试</h3>
+            <button class="btn" onclick="testRecognition()">🎤 测试语音识别</button>
+            <div id="recognitionResult"></div>
+            
+            <h3>语音合成测试</h3>
+            <input type="text" id="testText" placeholder="输入测试文字..." style="width: 60%; padding: 8px;">
+            <button class="btn" onclick="testSynthesis()">🔊 测试语音合成</button>
+            <div id="synthesisResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>📋 预期效果</h2>
+            <div class="alert alert-success">
+                <strong>✅ 配置成功后的效果：</strong>
+                <ul>
+                    <li>录音内容会被真实识别并转换为文字</li>
+                    <li>AI会根据识别的内容给出针对性回复</li>
+                    <li>AI回复会被合成为真实的语音并播放</li>
+                    <li>服务状态显示 "provider: alibaba-cloud"</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🚨 故障排除</h2>
+            <details>
+                <summary>❓ API密钥配置后仍然是模拟模式</summary>
+                <p>请检查：</p>
+                <ul>
+                    <li>API密钥格式是否正确（以sk-开头）</li>
+                    <li>是否重启了服务器</li>
+                    <li>环境变量是否正确设置</li>
+                </ul>
+            </details>
+            
+            <details>
+                <summary>❓ 语音识别失败</summary>
+                <p>可能原因：</p>
+                <ul>
+                    <li>API密钥额度不足</li>
+                    <li>网络连接问题</li>
+                    <li>音频格式不支持</li>
+                </ul>
+            </details>
+        </div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            const result = document.getElementById('statusResult');
+            result.innerHTML = '检查中...';
+            
+            try {
+                const response = await fetch('/api/speech/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const status = data.data;
+                    result.innerHTML = `
+                        <div class="alert ${status.configured ? 'alert-success' : 'alert-warning'}">
+                            <strong>配置状态：</strong> ${status.configured ? '✅ 已配置真实API' : '⚠️ 模拟模式'}<br>
+                            <strong>语音识别：</strong> ${status.speechRecognition.provider}<br>
+                            <strong>语音合成：</strong> ${status.speechSynthesis.provider}<br>
+                            ${status.configured ? 
+                                '<strong>🎉 恭喜！语音功能已正确配置</strong>' : 
+                                '<strong>⚠️ 请按照上述步骤配置API密钥</strong>'
+                            }
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `<div class="alert alert-warning">❌ 无法获取状态</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="alert alert-warning">❌ 连接失败: ${error.message}</div>`;
+            }
+        }
+
+        async function testRecognition() {
+            const result = document.getElementById('recognitionResult');
+            result.innerHTML = '测试中...';
+            
+            try {
+                const response = await fetch('/api/speech/recognize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ audioData: 'demo_audio_data' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.innerHTML = `
+                        <div class="alert alert-info">
+                            <strong>识别结果：</strong> "${data.data.text}"<br>
+                            <strong>提供商：</strong> ${data.data.provider}<br>
+                            <strong>响应时间：</strong> ${data.data.responseTime}ms
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `<div class="alert alert-warning">❌ 测试失败</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="alert alert-warning">❌ 测试失败: ${error.message}</div>`;
+            }
+        }
+
+        async function testSynthesis() {
+            const text = document.getElementById('testText').value || '你好，我是AI老师';
+            const result = document.getElementById('synthesisResult');
+            result.innerHTML = '合成中...';
+            
+            try {
+                const response = await fetch('/api/speech/synthesis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice: 'xiaoyun' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.innerHTML = `
+                        <div class="alert alert-info">
+                            <strong>合成文本：</strong> "${data.data.text}"<br>
+                            <strong>提供商：</strong> ${data.data.provider}<br>
+                            <strong>响应时间：</strong> ${data.data.responseTime}ms<br>
+                            ${data.data.provider === 'alibaba-cloud' ? 
+                                '<strong>✅ 真实语音已生成</strong>' : 
+                                '<strong>⚠️ 模拟模式（配置API后可听到声音）</strong>'
+                            }
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `<div class="alert alert-warning">❌ 合成失败</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="alert alert-warning">❌ 合成失败: ${error.message}</div>`;
+            }
+        }
+
+        // 页面加载时自动检查状态
+        window.onload = checkStatus;
+    </script>
+</body>
+</html> 

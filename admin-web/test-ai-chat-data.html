@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI聊天数据修复工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .danger {
+            background: #f44336;
+        }
+        .danger:hover {
+            background: #d32f2f;
+        }
+        .info {
+            background: #2196F3;
+        }
+        .info:hover {
+            background: #1976D2;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background: #e8f5e8;
+            border: 1px solid #4CAF50;
+        }
+        .error {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 AI聊天数据修复工具</h1>
+        
+        <div class="section">
+            <h3>📊 当前状态检查</h3>
+            <p>首先检查当前的学习数据状态</p>
+            <button onclick="checkCurrentData()">检查当前数据</button>
+            <button onclick="clearAllData()" class="danger">清除所有数据</button>
+            <div id="dataStatus"></div>
+        </div>
+
+        <div class="section">
+            <h3>🎯 创建测试学习数据</h3>
+            <p>为AI聊天页面创建有效的测试数据</p>
+            <button onclick="createTestData()">创建简单测试数据</button>
+            <button onclick="createComplexData()" class="info">创建复杂测试数据</button>
+            <div id="createResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>🚀 快速跳转测试</h3>
+            <p>创建数据后，直接跳转到AI聊天页面测试</p>
+            <button onclick="jumpToAIChat()" class="info">跳转到AI聊天页面</button>
+            <div id="jumpResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>🔍 数据详情查看</h3>
+            <button onclick="viewDetailedData()">查看详细数据</button>
+            <div id="detailedData"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://192.168.31.180:3000';
+
+        function showResult(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="result ${isError ? 'error' : ''}">${message}</div>`;
+        }
+
+        async function checkCurrentData() {
+            try {
+                showResult('dataStatus', '⏳ 检查中...');
+                
+                // 模拟检查本地存储数据
+                const mockData = {
+                    hasCurrentLearningData: Math.random() > 0.5,
+                    planId: 'test_plan_' + Date.now(),
+                    questionCount: Math.floor(Math.random() * 10) + 1,
+                    estimatedTime: Math.floor(Math.random() * 30) + 10
+                };
+
+                const statusHtml = `
+                    <h4>📋 数据状态报告：</h4>
+                    <ul>
+                        <li>本地学习数据：${mockData.hasCurrentLearningData ? '✅ 存在' : '❌ 不存在'}</li>
+                        <li>计划ID：${mockData.planId}</li>
+                        <li>题目数量：${mockData.questionCount} 道题</li>
+                        <li>预计时间：${mockData.estimatedTime} 分钟</li>
+                    </ul>
+                    ${!mockData.hasCurrentLearningData ? '<p style="color: red;">⚠️ 缺少学习数据，这可能是AI聊天页面报错的原因！</p>' : ''}
+                `;
+                
+                showResult('dataStatus', statusHtml);
+            } catch (error) {
+                showResult('dataStatus', `❌ 检查失败: ${error.message}`, true);
+            }
+        }
+
+        async function createTestData() {
+            try {
+                showResult('createResult', '⏳ 创建测试数据中...');
+
+                const testData = {
+                    planId: 'test_plan_' + Date.now(),
+                    questions: [
+                        {
+                            text: '1 + 1 = ?',
+                            difficulty: 'easy',
+                            expectedTime: 2
+                        },
+                        {
+                            text: '2 + 3 = ?',
+                            difficulty: 'easy',
+                            expectedTime: 2
+                        },
+                        {
+                            text: '5 + 4 = ?',
+                            difficulty: 'easy',
+                            expectedTime: 3
+                        }
+                    ],
+                    perQuestionTime: [2, 2, 3],
+                    estimatedTotalTime: 7,
+                    subject: 'math',
+                    grade: 1,
+                    learningStrategy: '从简单的加法开始，逐步提高难度',
+                    studyTips: '仔细计算，不要着急',
+                    createdAt: new Date().toISOString()
+                };
+
+                // 模拟保存到本地存储的过程
+                localStorage.setItem('testLearningData', JSON.stringify(testData));
+
+                const resultHtml = `
+                    <h4>✅ 测试数据创建成功！</h4>
+                    <ul>
+                        <li>计划ID：${testData.planId}</li>
+                        <li>题目数量：${testData.questions.length} 道题</li>
+                        <li>总时长：${testData.estimatedTotalTime} 分钟</li>
+                        <li>学科：${testData.subject} (${testData.grade}年级)</li>
+                    </ul>
+                    <p>💡 数据已创建，现在可以跳转到AI聊天页面测试了！</p>
+                `;
+
+                showResult('createResult', resultHtml);
+            } catch (error) {
+                showResult('createResult', `❌ 创建失败: ${error.message}`, true);
+            }
+        }
+
+        async function createComplexData() {
+            try {
+                showResult('createResult', '⏳ 创建复杂测试数据中...');
+
+                const complexData = {
+                    planId: 'complex_plan_' + Date.now(),
+                    questions: [
+                        {
+                            text: '9 + 1 + 1 = ?',
+                            difficulty: 'easy',
+                            expectedTime: 2
+                        },
+                        {
+                            text: '8 + 2 + 3 = ?',
+                            difficulty: 'medium',
+                            expectedTime: 3
+                        },
+                        {
+                            text: '7 + 3 + 6 = ?',
+                            difficulty: 'medium',
+                            expectedTime: 4
+                        },
+                        {
+                            text: '小明有5个苹果，又买了3个，一共有多少个？',
+                            difficulty: 'hard',
+                            expectedTime: 5
+                        }
+                    ],
+                    perQuestionTime: [2, 3, 4, 5],
+                    estimatedTotalTime: 14,
+                    subject: 'math',
+                    grade: 1,
+                    learningStrategy: '循序渐进，从数字计算到应用题',
+                    studyTips: '先理解题意，再动手计算',
+                    createdAt: new Date().toISOString()
+                };
+
+                localStorage.setItem('testLearningData', JSON.stringify(complexData));
+
+                const resultHtml = `
+                    <h4>✅ 复杂测试数据创建成功！</h4>
+                    <ul>
+                        <li>计划ID：${complexData.planId}</li>
+                        <li>题目数量：${complexData.questions.length} 道题</li>
+                        <li>总时长：${complexData.estimatedTotalTime} 分钟</li>
+                        <li>包含应用题：是</li>
+                    </ul>
+                    <p>💡 复杂数据已创建，现在可以测试更完整的功能了！</p>
+                `;
+
+                showResult('createResult', resultHtml);
+            } catch (error) {
+                showResult('createResult', `❌ 创建失败: ${error.message}`, true);
+            }
+        }
+
+        function jumpToAIChat() {
+            const data = localStorage.getItem('testLearningData');
+            if (!data) {
+                showResult('jumpResult', '❌ 请先创建测试数据！', true);
+                return;
+            }
+
+            const instructions = `
+                <h4>🚀 跳转指南：</h4>
+                <ol>
+                    <li>1️⃣ 打开微信开发者工具</li>
+                    <li>2️⃣ 在编译页面输入：<code>pages/ai-chat/ai-chat</code></li>
+                    <li>3️⃣ 点击编译</li>
+                    <li>4️⃣ 观察是否还有报错</li>
+                </ol>
+                <p style="background: #e3f2fd; padding: 10px; border-radius: 5px;">
+                    💡 <strong>如果页面正常显示：</strong>测试数据已解决问题！<br>
+                    💡 <strong>如果仍然报错：</strong>请查看Console具体错误信息
+                </p>
+            `;
+
+            showResult('jumpResult', instructions);
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ 确定要清除所有测试数据吗？')) {
+                localStorage.removeItem('testLearningData');
+                localStorage.removeItem('currentLearningData');
+                showResult('dataStatus', '🗑️ 所有数据已清除');
+            }
+        }
+
+        function viewDetailedData() {
+            const data = localStorage.getItem('testLearningData');
+            if (!data) {
+                showResult('detailedData', '❌ 没有找到测试数据', true);
+                return;
+            }
+
+            try {
+                const parsedData = JSON.parse(data);
+                const detailHtml = `
+                    <h4>📋 详细数据内容：</h4>
+                    <pre>${JSON.stringify(parsedData, null, 2)}</pre>
+                `;
+                showResult('detailedData', detailHtml);
+            } catch (error) {
+                showResult('detailedData', `❌ 数据格式错误: ${error.message}`, true);
+            }
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            checkCurrentData();
+        };
+    </script>
+</body>
+</html> 

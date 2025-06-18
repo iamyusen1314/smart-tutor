@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习计划生成测试 - 小学AI家教</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .test-title {
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        textarea, select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+
+        .btn-secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #edf2f7;
+        }
+
+        .result-area {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .json-display {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .flex {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .plan-preview {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .question-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+        }
+
+        .question-meta {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .time-allocation {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .time-badge {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI学习计划生成测试</h1>
+            <p>测试OCR识别后的智能学习计划生成功能</p>
+        </div>
+
+        <!-- 基础测试 -->
+        <div class="test-section">
+            <div class="test-title">🎯 基础学习计划生成测试</div>
+            
+            <div class="grid">
+                <div>
+                    <div class="form-group">
+                        <label>OCR识别的题目文本（每行一题）</label>
+                        <textarea id="ocrText" placeholder="请输入题目，例如：&#10;3 + 4 = ?&#10;小明有5个苹果，吃了2个，还剩几个？&#10;计算：8 × 3 = ?">3 + 4 = ?
+小明有5个苹果，吃了2个，还剩几个？
+计算：8 × 3 = ?
+15 ÷ 3 = ?
+小红买了2本书，每本12元，一共花了多少钱？</textarea>
+                    </div>
+
+                    <div class="flex">
+                        <div class="form-group">
+                            <label>学科</label>
+                            <select id="subject">
+                                <option value="math">数学</option>
+                                <option value="chinese">语文</option>
+                                <option value="english">英语</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>年级</label>
+                            <select id="grade">
+                                <option value="1">一年级</option>
+                                <option value="2">二年级</option>
+                                <option value="3" selected>三年级</option>
+                                <option value="4">四年级</option>
+                                <option value="5">五年级</option>
+                                <option value="6">六年级</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="testPlanGeneration()">
+                            🚀 生成学习计划
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearResults()">
+                            🗑️ 清空结果
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="form-group">
+                        <label>测试状态</label>
+                        <div id="testStatus">等待测试...</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>学习计划预览</label>
+                        <div id="planPreview" class="result-area">
+                            点击"生成学习计划"开始测试
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI练习题生成测试 -->
+        <div class="test-section">
+            <div class="test-title">🧠 AI练习题生成测试</div>
+            
+            <div class="form-group">
+                <button class="btn btn-primary" onclick="testAIPracticeGeneration()">
+                    🎯 测试AI练习题生成
+                </button>
+                <button class="btn btn-secondary" onclick="testAIChatTutoring()">
+                    💬 测试AI聊天答疑
+                </button>
+            </div>
+
+            <div class="result-area" id="aiTestResults">
+                等待AI功能测试...
+            </div>
+        </div>
+
+        <!-- API响应详情 -->
+        <div class="test-section">
+            <div class="test-title">📋 API响应详情</div>
+            <div class="json-display" id="apiResponse">
+                等待API调用...
+            </div>
+        </div>
+
+        <!-- 性能统计 -->
+        <div class="test-section">
+            <div class="test-title">📊 性能统计</div>
+            <div id="performanceStats">
+                <div class="flex">
+                    <div>响应时间: <span id="responseTime">-</span></div>
+                    <div>API状态: <span id="apiStatus">-</span></div>
+                    <div>数据大小: <span id="dataSize">-</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+
+        async function testPlanGeneration() {
+            const ocrText = document.getElementById('ocrText').value.trim();
+            const subject = document.getElementById('subject').value;
+            const grade = parseInt(document.getElementById('grade').value);
+
+            if (!ocrText) {
+                setStatus('error', '请输入OCR识别的题目文本');
+                return;
+            }
+
+            setStatus('loading', '正在生成学习计划...');
+            const startTime = Date.now();
+
+            try {
+                // 准备请求数据
+                const requestData = {
+                    ocrText: ocrText.split('\n').filter(line => line.trim()),
+                    subject: subject,
+                    grade: grade,
+                    originalImage: null
+                };
+
+                console.log('📤 发送学习计划生成请求:', requestData);
+
+                // 调用学习计划生成API
+                const response = await fetch('/api/plan/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const responseTime = Date.now() - startTime;
+                updatePerformanceStats(responseTime, response.status, 0);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const planData = await response.json();
+                console.log('📥 学习计划响应:', planData);
+
+                // 更新性能统计
+                updatePerformanceStats(responseTime, response.status, JSON.stringify(planData).length);
+
+                // 显示结果
+                displayPlanPreview(planData);
+                displayApiResponse(planData);
+                setStatus('success', `学习计划生成成功！用时 ${responseTime}ms`);
+
+                testResults.push({
+                    type: 'plan_generation',
+                    success: true,
+                    responseTime,
+                    planId: planData.planId,
+                    questionCount: planData.questionCount
+                });
+
+            } catch (error) {
+                console.error('❌ 学习计划生成失败:', error);
+                setStatus('error', `学习计划生成失败: ${error.message}`);
+                displayApiResponse({ error: error.message });
+
+                testResults.push({
+                    type: 'plan_generation',
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+
+        async function testAIPracticeGeneration() {
+            setStatus('loading', '正在测试AI练习题生成...');
+
+            try {
+                const response = await fetch('/api/ai-generator/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+                document.getElementById('aiTestResults').innerHTML = `
+                    <div class="status success">AI练习题生成测试成功</div>
+                    <div class="json-display">${JSON.stringify(result, null, 2)}</div>
+                `;
+
+                setStatus('success', 'AI练习题生成测试完成');
+
+            } catch (error) {
+                document.getElementById('aiTestResults').innerHTML = `
+                    <div class="status error">AI练习题生成测试失败: ${error.message}</div>
+                `;
+                setStatus('error', 'AI练习题生成测试失败');
+            }
+        }
+
+        async function testAIChatTutoring() {
+            setStatus('loading', '正在测试AI聊天答疑...');
+
+            try {
+                const response = await fetch('/api/ai-generator/chat-tutoring', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: "3 + 4 = ?",
+                        studentInput: "我不知道怎么算",
+                        urgency: 'normal'
+                    })
+                });
+
+                const result = await response.json();
+                document.getElementById('aiTestResults').innerHTML = `
+                    <div class="status success">AI聊天答疑测试成功</div>
+                    <div class="json-display">${JSON.stringify(result, null, 2)}</div>
+                `;
+
+                setStatus('success', 'AI聊天答疑测试完成');
+
+            } catch (error) {
+                document.getElementById('aiTestResults').innerHTML = `
+                    <div class="status error">AI聊天答疑测试失败: ${error.message}</div>
+                `;
+                setStatus('error', 'AI聊天答疑测试失败');
+            }
+        }
+
+        function displayPlanPreview(planData) {
+            const preview = document.getElementById('planPreview');
+            
+            if (!planData || !planData.questions) {
+                preview.innerHTML = '<div class="status error">无效的学习计划数据</div>';
+                return;
+            }
+
+            let html = `
+                <div class="plan-preview">
+                    <h4>📋 学习计划概览</h4>
+                    <p><strong>计划ID:</strong> ${planData.planId}</p>
+                    <p><strong>题目数量:</strong> ${planData.questionCount}</p>
+                    <p><strong>预计总时长:</strong> ${planData.estimatedTotalTime} 分钟</p>
+                    <p><strong>学科:</strong> ${planData.subject}</p>
+                    <p><strong>年级:</strong> ${planData.grade}</p>
+                </div>
+            `;
+
+            if (planData.questions && planData.questions.length > 0) {
+                html += '<h5>📝 题目列表:</h5>';
+                planData.questions.forEach((q, index) => {
+                    html += `
+                        <div class="question-item">
+                            <div><strong>题目 ${index + 1}:</strong> ${q.text}</div>
+                            <div class="question-meta">
+                                时间: ${q.time}分钟 | 
+                                难度: ${q.difficulty || '未知'} | 
+                                类型: ${q.type || '未知'}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            if (planData.perQuestionTime && planData.perQuestionTime.length > 0) {
+                html += '<h5>⏱️ 时间分配:</h5>';
+                html += '<div class="time-allocation">';
+                planData.perQuestionTime.forEach((time, index) => {
+                    html += `<span class="time-badge">题目${index + 1}: ${time}分钟</span>`;
+                });
+                html += '</div>';
+            }
+
+            if (planData.learningStrategy) {
+                html += `
+                    <div class="plan-preview">
+                        <h5>🎯 学习策略:</h5>
+                        <p>${planData.learningStrategy}</p>
+                    </div>
+                `;
+            }
+
+            if (planData.studyTips && planData.studyTips.length > 0) {
+                html += `
+                    <div class="plan-preview">
+                        <h5>💡 学习建议:</h5>
+                        <ul>
+                            ${planData.studyTips.map(tip => `<li>${tip}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            preview.innerHTML = html;
+        }
+
+        function displayApiResponse(data) {
+            document.getElementById('apiResponse').textContent = JSON.stringify(data, null, 2);
+        }
+
+        function updatePerformanceStats(responseTime, status, dataSize) {
+            document.getElementById('responseTime').textContent = `${responseTime}ms`;
+            document.getElementById('apiStatus').textContent = status;
+            document.getElementById('dataSize').textContent = `${(dataSize / 1024).toFixed(2)}KB`;
+        }
+
+        function setStatus(type, message) {
+            const statusEl = document.getElementById('testStatus');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+
+        function clearResults() {
+            document.getElementById('planPreview').innerHTML = '点击"生成学习计划"开始测试';
+            document.getElementById('apiResponse').textContent = '等待API调用...';
+            document.getElementById('aiTestResults').innerHTML = '等待AI功能测试...';
+            setStatus('', '等待测试...');
+            testResults = [];
+        }
+
+        // 页面加载完成后检查服务器状态
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('/api/health');
+                const health = await response.json();
+                setStatus('success', `服务器正常运行 - ${health.message}`);
+            } catch (error) {
+                setStatus('error', '服务器连接失败，请检查后端服务');
+            }
+        });
+    </script>
+</body>
+</html> 

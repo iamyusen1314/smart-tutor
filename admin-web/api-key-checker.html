@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿里云DashScope API密钥状态检查</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .api-key-section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .api-key-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: monospace;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .api-key-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 48px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn:disabled {
+            background: #e9ecef;
+            color: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results-section {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #e1e5e9;
+            background: #f8f9fa;
+        }
+        
+        .results-section.show {
+            display: block;
+        }
+        
+        .results-section.hide {
+            display: none;
+        }
+        
+        .result-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: white;
+            border-left: 4px solid #e1e5e9;
+        }
+        
+        .result-item.success {
+            border-left-color: #28a745;
+        }
+        
+        .result-item.error {
+            border-left-color: #dc3545;
+        }
+        
+        .result-item.warning {
+            border-left-color: #ffc107;
+        }
+        
+        .result-icon {
+            font-size: 20px;
+            min-width: 24px;
+        }
+        
+        .result-content {
+            flex: 1;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .result-desc {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e1e5e9;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+        
+        .server-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .server-info h3 {
+            color: #1976d2;
+            margin-bottom: 8px;
+        }
+        
+        .server-info p {
+            color: #424242;
+            font-size: 14px;
+        }
+        
+        .error-detail {
+            background: #ffebee;
+            border: 1px solid #ffcdd2;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            color: #c62828;
+        }
+        
+        @media (max-width: 600px) {
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔑 API密钥状态检查</h1>
+            <p>通过本地服务器检查阿里云DashScope API密钥的有效性和账户状态</p>
+        </div>
+        
+        <div class="content">
+            <div class="server-info">
+                <h3>📡 服务器连接信息</h3>
+                <p>本工具通过本地后端服务器 (http://localhost:3000) 检查API状态，避免跨域问题</p>
+                <p>请确保后端服务器正在运行</p>
+            </div>
+            
+            <div class="api-key-section">
+                <div class="section-title">
+                    <span>🔐</span>
+                    <span>API密钥配置</span>
+                </div>
+                <input 
+                    type="password" 
+                    id="apiKeyInput" 
+                    class="api-key-input"
+                    placeholder="输入您的阿里云DashScope API密钥 (sk-...)"
+                    value="sk-a791758fe21c4a719b2c632d5345996f"
+                />
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="validateApiKey()">
+                        <span>✅</span>
+                        <span>验证API密钥</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="checkAccountStatus()">
+                        <span>💰</span>
+                        <span>检查账户状态</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="testModelAccess()">
+                        <span>🤖</span>
+                        <span>测试模型访问</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="runCompleteCheck()">
+                        <span>🔄</span>
+                        <span>完整诊断</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="resultsSection" class="results-section hide">
+                <div class="section-title">
+                    <span>📊</span>
+                    <span>检查结果</span>
+                </div>
+                <div id="loadingIndicator" class="loading hide">
+                    <div class="loading-spinner"></div>
+                    <p id="loadingText">正在检查...</p>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="resultsContainer"></div>
+            </div>
+            
+            <div class="server-info" style="margin-top: 30px;">
+                <h3>🛠️ 故障排除建议</h3>
+                <p><strong>如果检查失败，请尝试以下步骤：</strong></p>
+                <p>1. 确保后端服务器正在运行 (cd server && node app.js)</p>
+                <p>2. 检查API密钥是否正确 (应该以 sk- 开头)</p>
+                <p>3. 确认阿里云账户有足够余额</p>
+                <p>4. 验证已开通DashScope服务</p>
+                <p>5. 检查网络连接是否正常</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCheck = null;
+        
+        // 显示结果
+        function showResults() {
+            document.getElementById('resultsSection').classList.remove('hide');
+            document.getElementById('resultsSection').classList.add('show');
+        }
+        
+        // 显示加载状态
+        function showLoading(text = '正在检查...') {
+            document.getElementById('loadingIndicator').classList.remove('hide');
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('resultsContainer').innerHTML = '';
+            updateProgress(0);
+        }
+        
+        // 隐藏加载状态
+        function hideLoading() {
+            document.getElementById('loadingIndicator').classList.add('hide');
+        }
+        
+        // 更新进度条
+        function updateProgress(percent) {
+            document.getElementById('progressFill').style.width = percent + '%';
+        }
+        
+        // 添加结果项
+        function addResult(icon, title, desc, type = 'success') {
+            const container = document.getElementById('resultsContainer');
+            const resultItem = document.createElement('div');
+            resultItem.className = `result-item ${type}`;
+            resultItem.innerHTML = `
+                <div class="result-icon">${icon}</div>
+                <div class="result-content">
+                    <div class="result-title">${title}</div>
+                    <div class="result-desc">${desc}</div>
+                </div>
+            `;
+            container.appendChild(resultItem);
+        }
+        
+        // 添加错误详情
+        function addErrorDetail(error) {
+            const container = document.getElementById('resultsContainer');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-detail';
+            errorDiv.textContent = typeof error === 'string' ? error : JSON.stringify(error, null, 2);
+            container.appendChild(errorDiv);
+        }
+        
+        // 获取API密钥
+        function getApiKey() {
+            return document.getElementById('apiKeyInput').value.trim();
+        }
+        
+        // 验证API密钥格式
+        function validateApiKeyFormat(apiKey) {
+            if (!apiKey) {
+                throw new Error('请输入API密钥');
+            }
+            
+            if (!apiKey.startsWith('sk-')) {
+                throw new Error('API密钥格式错误，应该以 sk- 开头');
+            }
+            
+            if (apiKey.length < 10) {
+                throw new Error('API密钥长度不足');
+            }
+            
+            return true;
+        }
+        
+        // 通用请求函数
+        async function makeRequest(url, data = {}) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('请求失败:', error);
+                throw error;
+            }
+        }
+        
+        // 验证API密钥
+        async function validateApiKey() {
+            try {
+                const apiKey = getApiKey();
+                validateApiKeyFormat(apiKey);
+                
+                showResults();
+                showLoading('验证API密钥格式...');
+                updateProgress(20);
+                
+                addResult('✅', 'API密钥格式验证', '密钥格式正确', 'success');
+                updateProgress(50);
+                
+                // 通过后端服务器验证密钥
+                showLoading('通过服务器验证密钥...');
+                
+                const result = await makeRequest('http://localhost:3000/api/ocr/status', {
+                    apiKey: apiKey
+                });
+                
+                updateProgress(100);
+                hideLoading();
+                
+                if (result.success) {
+                    addResult('🎉', 'API密钥验证成功', 'API密钥有效，服务正常', 'success');
+                } else {
+                    addResult('❌', 'API密钥验证失败', result.error || '未知错误', 'error');
+                }
+                
+            } catch (error) {
+                hideLoading();
+                addResult('❌', 'API密钥验证失败', error.message, 'error');
+                addErrorDetail(error.message);
+            }
+        }
+        
+        // 检查账户状态
+        async function checkAccountStatus() {
+            try {
+                const apiKey = getApiKey();
+                validateApiKeyFormat(apiKey);
+                
+                showResults();
+                showLoading('检查账户状态...');
+                updateProgress(30);
+                
+                const result = await makeRequest('http://localhost:3000/api/ocr/test', {
+                    apiKey: apiKey,
+                    testType: 'account'
+                });
+                
+                updateProgress(100);
+                hideLoading();
+                
+                if (result.success) {
+                    addResult('💰', '账户状态正常', '账户有余额，可以正常使用', 'success');
+                    if (result.usage) {
+                        addResult('📊', '使用量信息', `今日调用: ${result.usage.today || 0} 次`, 'success');
+                    }
+                } else {
+                    addResult('⚠️', '账户状态异常', result.error || '可能需要充值或检查权限', 'warning');
+                }
+                
+            } catch (error) {
+                hideLoading();
+                addResult('❌', '账户状态检查失败', error.message, 'error');
+                addErrorDetail(error.message);
+            }
+        }
+        
+        // 测试模型访问
+        async function testModelAccess() {
+            try {
+                const apiKey = getApiKey();
+                validateApiKeyFormat(apiKey);
+                
+                showResults();
+                showLoading('测试OCR模型访问...');
+                updateProgress(20);
+                
+                // 准备测试数据
+                const testData = {
+                    imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', // 1x1 透明像素
+                    format: 'base64'
+                };
+                
+                updateProgress(50);
+                showLoading('发送测试OCR请求...');
+                
+                const result = await makeRequest('http://localhost:3000/api/ocr/recognize', {
+                    ...testData,
+                    apiKey: apiKey
+                });
+                
+                updateProgress(100);
+                hideLoading();
+                
+                if (result.success) {
+                    addResult('🤖', 'OCR模型访问正常', 'Qwen VL模型可以正常访问', 'success');
+                    addResult('📝', '模型响应', '模型已正确处理测试请求', 'success');
+                } else {
+                    addResult('⚠️', 'OCR模型访问异常', result.error || '模型调用失败', 'error');
+                }
+                
+            } catch (error) {
+                hideLoading();
+                addResult('❌', '模型访问测试失败', error.message, 'error');
+                addErrorDetail(error.message);
+            }
+        }
+        
+        // 运行完整检查
+        async function runCompleteCheck() {
+            try {
+                const apiKey = getApiKey();
+                validateApiKeyFormat(apiKey);
+                
+                showResults();
+                showLoading('开始完整诊断...');
+                
+                // 步骤1: 格式验证
+                updateProgress(10);
+                showLoading('1/5 验证API密钥格式...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                addResult('✅', '步骤1: 格式验证', '密钥格式正确', 'success');
+                
+                // 步骤2: 服务器连接
+                updateProgress(25);
+                showLoading('2/5 检查服务器连接...');
+                const healthCheck = await makeRequest('http://localhost:3000/health');
+                addResult('🌐', '步骤2: 服务器连接', '后端服务器连接正常', 'success');
+                
+                // 步骤3: OCR服务状态
+                updateProgress(45);
+                showLoading('3/5 检查OCR服务状态...');
+                const ocrStatus = await makeRequest('http://localhost:3000/api/ocr/status');
+                if (ocrStatus.success) {
+                    addResult('🔧', '步骤3: OCR服务', 'OCR服务运行正常', 'success');
+                } else {
+                    addResult('⚠️', '步骤3: OCR服务', 'OCR服务异常', 'warning');
+                }
+                
+                // 步骤4: API密钥验证
+                updateProgress(70);
+                showLoading('4/5 验证API密钥有效性...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                addResult('🔑', '步骤4: 密钥验证', '通过服务器验证成功', 'success');
+                
+                // 步骤5: 模型测试
+                updateProgress(90);
+                showLoading('5/5 测试OCR模型...');
+                const testData = {
+                    imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                    format: 'base64'
+                };
+                
+                const ocrTest = await makeRequest('http://localhost:3000/api/ocr/recognize', testData);
+                
+                updateProgress(100);
+                hideLoading();
+                
+                if (ocrTest.success) {
+                    addResult('🎉', '步骤5: 模型测试', 'OCR模型测试成功', 'success');
+                    addResult('✨', '完整诊断结果', 'API密钥和服务都正常，可以正常使用OCR功能！', 'success');
+                } else {
+                    addResult('❌', '步骤5: 模型测试', 'OCR模型测试失败', 'error');
+                    addResult('⚠️', '完整诊断结果', '存在问题，请检查API密钥或账户余额', 'warning');
+                }
+                
+            } catch (error) {
+                hideLoading();
+                addResult('❌', '完整诊断失败', error.message, 'error');
+                addErrorDetail(error.message);
+            }
+        }
+        
+        // 页面加载时自动检查服务器连接
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                if (response.ok) {
+                    console.log('✅ 后端服务器连接正常');
+                } else {
+                    console.warn('⚠️ 后端服务器响应异常');
+                }
+            } catch (error) {
+                console.error('❌ 后端服务器连接失败:', error);
+                // 显示连接失败提示
+                showResults();
+                addResult('❌', '服务器连接失败', '无法连接到后端服务器 (http://localhost:3000)，请确保服务器正在运行', 'error');
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 超激进压缩 OCR 测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #FF6B6B;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        
+        .status {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid #FF6B6B;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+        
+        .upload-section {
+            border: 3px dashed #4ECDC4;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section:hover {
+            border-color: #FF6B6B;
+            background: rgba(255, 107, 107, 0.05);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .upload-button {
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.3);
+        }
+        
+        .result {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            min-height: 100px;
+        }
+        
+        .success {
+            border-left: 5px solid #27AE60;
+            background: linear-gradient(135deg, #D5EDDA 0%, #C8E6C9 100%);
+        }
+        
+        .error {
+            border-left: 5px solid #E74C3C;
+            background: linear-gradient(135deg, #F8D7DA 0%, #F5C6CB 100%);
+        }
+        
+        .loading {
+            border-left: 5px solid #F39C12;
+            background: linear-gradient(135deg, #FFF3CD 0%, #FFEAA7 100%);
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .compression-info {
+            background: linear-gradient(135deg, #E8F5E8 0%, #F0F8F0 100%);
+            border: 2px solid #4CAF50;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .compression-info h3 {
+            color: #2E7D32;
+            margin-top: 0;
+        }
+        
+        .spec-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .spec-table th, .spec-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .spec-table th {
+            background: #FF6B6B;
+            color: white;
+        }
+        
+        .highlight {
+            background: #FFE082;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 超激进压缩 OCR 测试</h1>
+        <p class="subtitle">目标: 30KB + 320px 极限压缩，彻底解决 400 错误</p>
+        
+        <div class="status">
+            <span class="highlight">服务器状态:</span> <span id="serverStatus">检查中...</span>
+        </div>
+        
+        <div class="compression-info">
+            <h3>🎯 超激进压缩规格</h3>
+            <table class="spec-table">
+                <tr><th>参数</th><th>旧版本</th><th>新版本</th></tr>
+                <tr><td>目标大小</td><td>80KB</td><td><span class="highlight">30KB</span></td></tr>
+                <tr><td>最大尺寸</td><td>600px</td><td><span class="highlight">320px</span></td></tr>
+                <tr><td>图片格式</td><td>彩色JPEG</td><td><span class="highlight">灰度JPEG</span></td></tr>
+                <tr><td>起始质量</td><td>40%</td><td><span class="highlight">20%</span></td></tr>
+                <tr><td>最低质量</td><td>5%</td><td><span class="highlight">3%</span></td></tr>
+                <tr><td>极限尺寸</td><td>300px</td><td><span class="highlight">150px</span></td></tr>
+            </table>
+        </div>
+        
+        <div class="test-section">
+            <h3>🧪 预设测试</h3>
+            <button class="test-button" onclick="testSimpleMath()">测试简单数学题</button>
+            <button class="test-button" onclick="testComplexMath()">测试复杂数学题</button>
+            <button class="test-button" onclick="testLargeImage()">测试大图片压缩</button>
+            <div id="presetResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📤 自定义图片测试</h3>
+            <div class="upload-section" onclick="document.getElementById('fileInput').click()">
+                <p>📁 点击选择图片文件</p>
+                <button type="button" class="upload-button">选择图片</button>
+                <p style="margin-top: 15px; color: #666;">
+                    支持: JPG, PNG, JPEG<br>
+                    自动压缩至 30KB 以内 + 320px
+                </p>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" onchange="testCustomImage(this)">
+            <div id="uploadResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 检查服务器状态
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('http://localhost:3000/health')
+                const data = await response.json()
+                
+                if (data.status === 'ok') {
+                    document.getElementById('serverStatus').innerHTML = 
+                        '<span style="color: #27AE60;">✅ 运行正常</span> (OCR: ' + data.services.ocr + ')'
+                } else {
+                    document.getElementById('serverStatus').innerHTML = 
+                        '<span style="color: #E74C3C;">❌ 状态异常</span>'
+                }
+            } catch (error) {
+                document.getElementById('serverStatus').innerHTML = 
+                    '<span style="color: #E74C3C;">❌ 连接失败</span>'
+            }
+        }
+        
+        // 创建测试用的base64图片数据
+        function createTestImage() {
+            const canvas = document.createElement('canvas')
+            canvas.width = 800
+            canvas.height = 600
+            const ctx = canvas.getContext('2d')
+            
+            // 绘制背景
+            ctx.fillStyle = '#f0f0f0'
+            ctx.fillRect(0, 0, 800, 600)
+            
+            // 绘制数学题
+            ctx.fillStyle = '#000'
+            ctx.font = 'bold 36px Arial'
+            ctx.fillText('数学练习题', 50, 80)
+            
+            ctx.font = '28px Arial'
+            ctx.fillText('1. 25 + 37 = ?', 50, 150)
+            ctx.fillText('2. 84 - 29 = ?', 50, 200)
+            ctx.fillText('3. 6 × 8 = ?', 50, 250)
+            ctx.fillText('4. 72 ÷ 9 = ?', 50, 300)
+            
+            // 添加一些装饰线条
+            ctx.strokeStyle = '#ccc'
+            ctx.lineWidth = 2
+            for (let i = 0; i < 10; i++) {
+                ctx.beginPath()
+                ctx.moveTo(0, i * 60)
+                ctx.lineTo(800, i * 60)
+                ctx.stroke()
+            }
+            
+            return canvas.toDataURL('image/jpeg', 0.9).split(',')[1]
+        }
+        
+        // 测试函数
+        async function testOCR(imageData, resultElementId, testName) {
+            const resultElement = document.getElementById(resultElementId)
+            
+            resultElement.className = 'result loading'
+            resultElement.innerHTML = `
+                <h4>🔄 ${testName}</h4>
+                <p><span class="loader"></span> 正在执行超激进压缩和OCR识别...</p>
+                <p>⏱️ 预计时间: 15-30秒</p>
+            `
+            
+            const startTime = Date.now()
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ocr/recognize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        imageData: imageData,
+                        format: 'jpg',
+                        accurate: true
+                    })
+                })
+                
+                const endTime = Date.now()
+                const duration = ((endTime - startTime) / 1000).toFixed(1)
+                
+                if (!response.ok) {
+                    const errorData = await response.json()
+                    throw new Error(`${response.status}: ${errorData.message || response.statusText}`)
+                }
+                
+                const result = await response.json()
+                
+                resultElement.className = 'result success'
+                resultElement.innerHTML = `
+                    <h4>✅ ${testName} - 成功！</h4>
+                    <p><strong>耗时:</strong> ${duration}秒</p>
+                    <p><strong>识别结果:</strong></p>
+                    <ul>
+                        ${result.data.ocrText.map(text => `<li>${text}</li>`).join('')}
+                    </ul>
+                    <p><strong>置信度:</strong> ${result.data.confidence}</p>
+                    <p><strong>学科:</strong> ${result.data.subject}</p>
+                    <p><strong>年级:</strong> ${result.data.grade}</p>
+                    <p><strong>题目数量:</strong> ${result.data.questionCount}</p>
+                    <div style="background: #E8F5E8; padding: 10px; border-radius: 8px; margin-top: 10px;">
+                        <strong>🎯 压缩信息:</strong><br>
+                        图片大小: ${result.data.imageInfo.size}<br>
+                        API使用: ${result.data.apiUsage.totalTokens} tokens
+                    </div>
+                `
+                
+            } catch (error) {
+                const endTime = Date.now()
+                const duration = ((endTime - startTime) / 1000).toFixed(1)
+                
+                resultElement.className = 'result error'
+                resultElement.innerHTML = `
+                    <h4>❌ ${testName} - 失败</h4>
+                    <p><strong>耗时:</strong> ${duration}秒</p>
+                    <p><strong>错误信息:</strong> ${error.message}</p>
+                    <div style="background: #F8D7DA; padding: 10px; border-radius: 8px; margin-top: 10px;">
+                        <strong>📋 故障排除建议:</strong><br>
+                        1. 检查图片是否过大或过于复杂<br>
+                        2. 确认服务器运行正常<br>
+                        3. 检查网络连接<br>
+                        4. 如果仍然失败，可能需要进一步优化压缩策略
+                    </div>
+                `
+            }
+        }
+        
+        // 预设测试函数
+        async function testSimpleMath() {
+            const imageData = createTestImage()
+            await testOCR(imageData, 'presetResult', '简单数学题测试')
+        }
+        
+        async function testComplexMath() {
+            // 创建更复杂的测试图片
+            const canvas = document.createElement('canvas')
+            canvas.width = 1200
+            canvas.height = 800
+            const ctx = canvas.getContext('2d')
+            
+            ctx.fillStyle = '#ffffff'
+            ctx.fillRect(0, 0, 1200, 800)
+            
+            ctx.fillStyle = '#000000'
+            ctx.font = 'bold 32px Arial'
+            ctx.fillText('小学数学综合练习', 50, 60)
+            
+            ctx.font = '24px Arial'
+            const questions = [
+                '1. 计算：125 + 389 - 267 = ?',
+                '2. 填空：6 × ? = 144',
+                '3. 应用题：小明有45个苹果，给了小红12个，又买了28个，现在有多少个？',
+                '4. 分数计算：3/4 + 1/8 = ?',
+                '5. 几何：长方形长8cm，宽5cm，面积是多少？'
+            ]
+            
+            questions.forEach((q, i) => {
+                ctx.fillText(q, 50, 120 + i * 80)
+            })
+            
+            const imageData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1]
+            await testOCR(imageData, 'presetResult', '复杂数学题测试')
+        }
+        
+        async function testLargeImage() {
+            // 创建一个大图片来测试压缩效果
+            const canvas = document.createElement('canvas')
+            canvas.width = 2000  // 很大的尺寸
+            canvas.height = 1500
+            const ctx = canvas.getContext('2d')
+            
+            // 创建复杂的背景图案
+            for (let x = 0; x < 2000; x += 50) {
+                for (let y = 0; y < 1500; y += 50) {
+                    ctx.fillStyle = `hsl(${(x + y) % 360}, 50%, 80%)`
+                    ctx.fillRect(x, y, 45, 45)
+                }
+            }
+            
+            // 添加数学题
+            ctx.fillStyle = '#000'
+            ctx.font = 'bold 48px Arial'
+            ctx.fillText('这是一个大图片压缩测试', 100, 100)
+            
+            ctx.font = '36px Arial'
+            ctx.fillText('原始尺寸: 2000x1500 像素', 100, 180)
+            ctx.fillText('预计文件大小: >500KB', 100, 240)
+            ctx.fillText('目标压缩后: <30KB, <320px', 100, 300)
+            
+            const imageData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1]
+            await testOCR(imageData, 'presetResult', '大图片压缩测试')
+        }
+        
+        // 自定义图片测试
+        async function testCustomImage(input) {
+            const file = input.files[0]
+            if (!file) return
+            
+            const reader = new FileReader()
+            reader.onload = async function(e) {
+                const base64Data = e.target.result.split(',')[1]
+                await testOCR(base64Data, 'uploadResult', `自定义图片测试 (${file.name})`)
+            }
+            reader.readAsDataURL(file)
+        }
+        
+        // 页面加载时检查服务器状态
+        window.onload = function() {
+            checkServerStatus()
+        }
+    </script>
+</body>
+</html> 

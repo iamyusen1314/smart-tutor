@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>答案检查功能测试 - 小学AI家教</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 15px;
+            background: #f8f9fa;
+        }
+        
+        .test-section h3 {
+            color: #34495e;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .test-case {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .test-input {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .test-input label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .test-input input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .test-button:hover {
+            background: #2980b9;
+        }
+        
+        .result {
+            margin-left: 15px;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .result.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .result.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .result.pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .batch-test {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .batch-test button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .batch-test button:hover {
+            background: #229954;
+        }
+        
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .stat-card h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧮 答案检查功能测试</h1>
+            <p>测试9+1+1=11等多数字运算的答案检查是否正确</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 重点测试：多数字连加运算</h3>
+            
+            <div class="test-case">
+                <div class="test-input">
+                    <label>题目：</label>
+                    <input type="text" id="q1" value="9 + 1 + 1 =" readonly>
+                </div>
+                <div class="test-input">
+                    <label>学生答案：</label>
+                    <input type="text" id="a1" value="11">
+                </div>
+                <button class="test-button" onclick="testAnswer('q1', 'a1', 'r1')">检查答案</button>
+                <div class="result pending" id="r1">等待测试</div>
+            </div>
+
+            <div class="test-case">
+                <div class="test-input">
+                    <label>题目：</label>
+                    <input type="text" id="q2" value="8 + 2 + 3 =" readonly>
+                </div>
+                <div class="test-input">
+                    <label>学生答案：</label>
+                    <input type="text" id="a2" value="13">
+                </div>
+                <button class="test-button" onclick="testAnswer('q2', 'a2', 'r2')">检查答案</button>
+                <div class="result pending" id="r2">等待测试</div>
+            </div>
+
+            <div class="test-case">
+                <div class="test-input">
+                    <label>题目：</label>
+                    <input type="text" id="q3" value="7 + 3 + 6 =" readonly>
+                </div>
+                <div class="test-input">
+                    <label>学生答案：</label>
+                    <input type="text" id="a3" value="16">
+                </div>
+                <button class="test-button" onclick="testAnswer('q3', 'a3', 'r3')">检查答案</button>
+                <div class="result pending" id="r3">等待测试</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📐 基础运算测试</h3>
+            
+            <div class="test-case">
+                <div class="test-input">
+                    <label>题目：</label>
+                    <input type="text" id="q4" value="3 + 5 =" readonly>
+                </div>
+                <div class="test-input">
+                    <label>学生答案：</label>
+                    <input type="text" id="a4" value="8">
+                </div>
+                <button class="test-button" onclick="testAnswer('q4', 'a4', 'r4')">检查答案</button>
+                <div class="result pending" id="r4">等待测试</div>
+            </div>
+
+            <div class="test-case">
+                <div class="test-input">
+                    <label>题目：</label>
+                    <input type="text" id="q5" value="10 - 3 =" readonly>
+                </div>
+                <div class="test-input">
+                    <label>学生答案：</label>
+                    <input type="text" id="a5" value="7">
+                </div>
+                <button class="test-button" onclick="testAnswer('q5', 'a5', 'r5')">检查答案</button>
+                <div class="result pending" id="r5">等待测试</div>
+            </div>
+
+            <div class="test-case">
+                <div class="test-input">
+                    <label>题目：</label>
+                    <input type="text" id="q6" value="4 × 3 =" readonly>
+                </div>
+                <div class="test-input">
+                    <label>学生答案：</label>
+                    <input type="text" id="a6" value="12">
+                </div>
+                <button class="test-button" onclick="testAnswer('q6', 'a6', 'r6')">检查答案</button>
+                <div class="result pending" id="r6">等待测试</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>❌ 错误答案测试</h3>
+            
+            <div class="test-case">
+                <div class="test-input">
+                    <label>题目：</label>
+                    <input type="text" id="q7" value="9 + 1 + 1 =" readonly>
+                </div>
+                <div class="test-input">
+                    <label>学生答案（故意错误）：</label>
+                    <input type="text" id="a7" value="10">
+                </div>
+                <button class="test-button" onclick="testAnswer('q7', 'a7', 'r7')">检查答案</button>
+                <div class="result pending" id="r7">等待测试</div>
+            </div>
+
+            <div class="test-case">
+                <div class="test-input">
+                    <label>题目：</label>
+                    <input type="text" id="q8" value="3 + 5 =" readonly>
+                </div>
+                <div class="test-input">
+                    <label>学生答案（故意错误）：</label>
+                    <input type="text" id="a8" value="7">
+                </div>
+                <button class="test-button" onclick="testAnswer('q8', 'a8', 'r8')">检查答案</button>
+                <div class="result pending" id="r8">等待测试</div>
+            </div>
+        </div>
+
+        <div class="batch-test">
+            <button onclick="runAllTests()">🚀 运行所有测试</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h4>测试总数</h4>
+                <div class="number" id="totalTests">8</div>
+            </div>
+            <div class="stat-card">
+                <h4>通过测试</h4>
+                <div class="number" id="passedTests">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>失败测试</h4>
+                <div class="number" id="failedTests">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>通过率</h4>
+                <div class="number" id="passRate">0%</div>
+            </div>
+        </div>
+
+        <div class="log" id="testLog">测试日志将在这里显示...
+
+🎯 重点测试目标：
+- 验证 9+1+1=11 能被正确识别为正确答案
+- 测试多数字连加运算的准确性
+- 确保基础运算仍然正常工作
+- 检验错误答案能被正确识别
+
+点击"运行所有测试"开始测试...
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            total: 8,
+            passed: 0,
+            failed: 0
+        };
+
+        function log(message) {
+            const logElement = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `\n[${timestamp}] ${message}`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        async function testAnswer(questionId, answerId, resultId) {
+            const questionText = document.getElementById(questionId).value;
+            const studentAnswer = document.getElementById(answerId).value;
+            const resultElement = document.getElementById(resultId);
+            
+            resultElement.textContent = '检查中...';
+            resultElement.className = 'result pending';
+            
+            log(`测试：${questionText} 学生答案：${studentAnswer}`);
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ai-chat/check-answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: questionText,
+                        answer: studentAnswer,
+                        subject: 'math',
+                        grade: 1
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const isCorrect = result.data.isCorrect;
+                        const expected = getExpectedResult(questionText, studentAnswer);
+                        
+                        if (isCorrect === expected) {
+                            resultElement.textContent = isCorrect ? '✅ 正确' : '❌ 错误';
+                            resultElement.className = isCorrect ? 'result correct' : 'result incorrect';
+                            testResults.passed++;
+                            log(`✅ 测试通过 - 答案${isCorrect ? '正确' : '错误'}（符合预期）`);
+                        } else {
+                            resultElement.textContent = '🐛 判断错误';
+                            resultElement.className = 'result incorrect';
+                            testResults.failed++;
+                            log(`❌ 测试失败 - 预期${expected ? '正确' : '错误'}，实际判断为${isCorrect ? '正确' : '错误'}`);
+                        }
+                    } else {
+                        throw new Error(result.message || '检查失败');
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+            } catch (error) {
+                resultElement.textContent = '检查失败';
+                resultElement.className = 'result incorrect';
+                testResults.failed++;
+                log(`❌ API调用失败：${error.message}`);
+            }
+            
+            updateStats();
+        }
+
+        function getExpectedResult(question, answer) {
+            // 预期结果判断逻辑
+            const testCases = {
+                '9 + 1 + 1 =': { '11': true, '10': false },
+                '8 + 2 + 3 =': { '13': true },
+                '7 + 3 + 6 =': { '16': true },
+                '3 + 5 =': { '8': true, '7': false },
+                '10 - 3 =': { '7': true },
+                '4 × 3 =': { '12': true }
+            };
+            
+            return testCases[question] && testCases[question][answer] === true;
+        }
+
+        function updateStats() {
+            document.getElementById('passedTests').textContent = testResults.passed;
+            document.getElementById('failedTests').textContent = testResults.failed;
+            
+            const tested = testResults.passed + testResults.failed;
+            const passRate = tested > 0 ? Math.round((testResults.passed / tested) * 100) : 0;
+            document.getElementById('passRate').textContent = `${passRate}%`;
+        }
+
+        async function runAllTests() {
+            log('\n🚀 开始批量测试...\n');
+            
+            // 重置统计
+            testResults = { total: 8, passed: 0, failed: 0 };
+            
+            // 运行所有测试
+            for (let i = 1; i <= 8; i++) {
+                await testAnswer(`q${i}`, `a${i}`, `r${i}`);
+                // 添加延迟避免请求过快
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            log(`\n📊 测试完成！通过：${testResults.passed}/${testResults.total}，通过率：${Math.round((testResults.passed/testResults.total)*100)}%`);
+            
+            if (testResults.passed === testResults.total) {
+                log('🎉 所有测试通过！答案检查功能工作正常！');
+            } else {
+                log('⚠️ 部分测试失败，需要检查答案检查逻辑。');
+            }
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('答案检查功能测试页面已加载');
+            log('服务器地址：http://localhost:3000');
+            log('请确保后端服务正在运行...\n');
+        });
+    </script>
+</body>
+</html> 

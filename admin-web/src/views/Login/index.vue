@@ -1,0 +1,1 @@
+<template><div class="login"><h1>Login Page</h1><button @click="login">Login</button></div></template><script>export default { name: "Login", methods: { login() { localStorage.setItem("admin_token", "fake-token"); this.$router.push("/"); } } }</script><style scoped>.login { padding: 20px; }</style>

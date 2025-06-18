@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习计划API测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #28a745;
+        }
+        .result {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left-color: #28a745; }
+        .error { border-left-color: #dc3545; }
+        .warning { border-left-color: #ffc107; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 学习计划API测试</h1>
+        <p>测试修复后的学习计划生成API，验证超时问题是否解决</p>
+
+        <div class="stats" id="stats">
+            <div class="stat">
+                <div id="totalTests">总测试: 0</div>
+            </div>
+            <div class="stat">
+                <div id="successTests">成功: 0</div>
+            </div>
+            <div class="stat">
+                <div id="failedTests">失败: 0</div>
+            </div>
+            <div class="stat">
+                <div id="avgTime">平均时间: 0ms</div>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <h3>📝 基础功能测试</h3>
+            <button onclick="testBasicPlan()">测试基础学习计划</button>
+            <button onclick="testMathPlan()">测试数学计划</button>
+            <button onclick="testComplexPlan()">测试复杂计划</button>
+            <button onclick="clearResults()">清空结果</button>
+        </div>
+
+        <div class="test-item">
+            <h3>⚡ 性能测试</h3>
+            <button onclick="testPerformance()">性能测试(5次)</button>
+            <button onclick="testConcurrent()">并发测试(3个)</button>
+            <button onclick="testTimeout()">超时测试</button>
+        </div>
+
+        <div class="test-item">
+            <h3>🔄 错误处理测试</h3>
+            <button onclick="testInvalidData()">无效数据测试</button>
+            <button onclick="testEmptyData()">空数据测试</button>
+            <button onclick="testNetworkError()">网络错误测试</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let testStats = {
+            total: 0,
+            success: 0,
+            failed: 0,
+            times: []
+        }
+
+        function updateStats() {
+            document.getElementById('totalTests').textContent = `总测试: ${testStats.total}`
+            document.getElementById('successTests').textContent = `成功: ${testStats.success}`
+            document.getElementById('failedTests').textContent = `失败: ${testStats.failed}`
+            const avgTime = testStats.times.length > 0 ? 
+                Math.round(testStats.times.reduce((a, b) => a + b, 0) / testStats.times.length) : 0
+            document.getElementById('avgTime').textContent = `平均时间: ${avgTime}ms`
+        }
+
+        function addResult(title, success, message, data = null, responseTime = null) {
+            const results = document.getElementById('results')
+            const div = document.createElement('div')
+            div.className = `result ${success ? 'success' : 'error'}`
+            
+            testStats.total++
+            if (success) {
+                testStats.success++
+                if (responseTime) testStats.times.push(responseTime)
+            } else {
+                testStats.failed++
+            }
+            updateStats()
+            
+            const timestamp = new Date().toLocaleTimeString()
+            let content = `[${timestamp}] ${success ? '✅' : '❌'} ${title}\n${message}`
+            
+            if (responseTime) {
+                content += `\n🕐 响应时间: ${responseTime}ms`
+            }
+            
+            if (data) {
+                content += `\n📊 数据: ${JSON.stringify(data, null, 2)}`
+            }
+            
+            div.textContent = content
+            results.insertBefore(div, results.firstChild)
+        }
+
+        async function callPlanAPI(ocrText, subject = 'math', grade = '1') {
+            const startTime = Date.now()
+            
+            try {
+                const response = await fetch('http://192.168.2.120:3000/api/plan/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ocrText: ocrText,
+                        subject: subject,
+                        grade: grade
+                    })
+                })
+
+                const responseTime = Date.now() - startTime
+                const data = await response.json()
+
+                if (response.ok) {
+                    return { success: true, data, responseTime }
+                } else {
+                    return { success: false, error: data.error || '未知错误', responseTime }
+                }
+            } catch (error) {
+                const responseTime = Date.now() - startTime
+                return { success: false, error: error.message, responseTime }
+            }
+        }
+
+        async function testBasicPlan() {
+            addResult('基础学习计划测试', true, '开始测试...', null, null)
+            
+            const result = await callPlanAPI(['1 + 1 =', '2 + 2 ='], 'math', '1')
+            
+            if (result.success) {
+                const plan = result.data
+                addResult('基础学习计划测试', true, 
+                    `成功生成计划: ${plan.questionCount}道题, 总时长${plan.estimatedTotalTime}分钟`,
+                    {
+                        planId: plan.planId,
+                        questions: plan.questions.length,
+                        strategy: plan.learningStrategy,
+                        aiGenerated: plan.aiGenerated
+                    },
+                    result.responseTime
+                )
+            } else {
+                addResult('基础学习计划测试', false, `失败: ${result.error}`, null, result.responseTime)
+            }
+        }
+
+        async function testMathPlan() {
+            addResult('数学计划测试', true, '开始测试...', null, null)
+            
+            const mathQuestions = [
+                '9 + 1 + 1 =',
+                '9 + 2 =',
+                '8 + 2 + 3 =',
+                '8 + 5 =',
+                '7 + 3 + 6 =',
+                '7 + 9 ='
+            ]
+            
+            const result = await callPlanAPI(mathQuestions, 'math', '1')
+            
+            if (result.success) {
+                const plan = result.data
+                addResult('数学计划测试', true, 
+                    `成功生成数学计划: ${plan.questionCount}道题`,
+                    {
+                        totalTime: plan.estimatedTotalTime,
+                        aiGenerated: plan.aiGenerated,
+                        sampleQuestion: plan.questions[0]
+                    },
+                    result.responseTime
+                )
+            } else {
+                addResult('数学计划测试', false, `失败: ${result.error}`, null, result.responseTime)
+            }
+        }
+
+        async function testComplexPlan() {
+            addResult('复杂计划测试', true, '开始测试...', null, null)
+            
+            const complexQuestions = Array.from({length: 16}, (_, i) => `题目${i+1}: 复杂数学应用题 ${i+1}`)
+            
+            const result = await callPlanAPI(complexQuestions, 'math', '3')
+            
+            if (result.success) {
+                addResult('复杂计划测试', true, `成功生成复杂计划: ${result.data.questionCount}道题`, 
+                    { aiGenerated: result.data.aiGenerated }, result.responseTime)
+            } else {
+                addResult('复杂计划测试', false, `失败: ${result.error}`, null, result.responseTime)
+            }
+        }
+
+        async function testPerformance() {
+            addResult('性能测试', true, '开始5次连续测试...', null, null)
+            
+            const times = []
+            for (let i = 0; i < 5; i++) {
+                const result = await callPlanAPI([`测试题目${i+1}`], 'math', '1')
+                times.push(result.responseTime)
+                
+                if (!result.success) {
+                    addResult('性能测试', false, `第${i+1}次失败: ${result.error}`, null, result.responseTime)
+                    return
+                }
+            }
+            
+            const avgTime = times.reduce((a, b) => a + b, 0) / times.length
+            const maxTime = Math.max(...times)
+            const minTime = Math.min(...times)
+            
+            addResult('性能测试', true, `完成5次测试`, {
+                平均时间: `${avgTime.toFixed(0)}ms`,
+                最快: `${minTime}ms`,
+                最慢: `${maxTime}ms`,
+                所有时间: times
+            })
+        }
+
+        async function testConcurrent() {
+            addResult('并发测试', true, '开始3个并发请求...', null, null)
+            
+            const promises = [
+                callPlanAPI(['并发测试1'], 'math', '1'),
+                callPlanAPI(['并发测试2'], 'math', '2'),
+                callPlanAPI(['并发测试3'], 'chinese', '1')
+            ]
+            
+            try {
+                const results = await Promise.all(promises)
+                const successful = results.filter(r => r.success).length
+                const times = results.map(r => r.responseTime)
+                
+                addResult('并发测试', successful === 3, 
+                    `${successful}/3 成功`,
+                    { 响应时间: times }
+                )
+            } catch (error) {
+                addResult('并发测试', false, `并发测试失败: ${error.message}`)
+            }
+        }
+
+        async function testTimeout() {
+            addResult('超时测试', true, '开始超时测试...', null, null)
+            
+            // 模拟一个可能导致超时的大请求
+            const largeQuestions = Array.from({length: 50}, (_, i) => 
+                `这是一道非常复杂的数学应用题目${i+1}，包含多个步骤和复杂的计算过程，需要综合运用各种数学知识`
+            )
+            
+            const result = await callPlanAPI(largeQuestions, 'math', '6')
+            
+            if (result.success) {
+                addResult('超时测试', true, `大数据量测试成功`, 
+                    { questions: result.data.questionCount }, result.responseTime)
+            } else {
+                addResult('超时测试', false, `超时测试失败: ${result.error}`, null, result.responseTime)
+            }
+        }
+
+        async function testInvalidData() {
+            addResult('无效数据测试', true, '测试无效数据处理...', null, null)
+            
+            const result = await callPlanAPI([], 'math', '1')  // 空数组
+            
+            if (!result.success) {
+                addResult('无效数据测试', true, `正确拒绝无效数据: ${result.error}`, null, result.responseTime)
+            } else {
+                addResult('无效数据测试', false, '应该拒绝空数据，但却成功了', result.data, result.responseTime)
+            }
+        }
+
+        async function testEmptyData() {
+            addResult('空数据测试', true, '测试空数据...', null, null)
+            
+            try {
+                const response = await fetch('http://192.168.2.120:3000/api/plan/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                })
+                
+                const data = await response.json()
+                
+                if (response.status === 400) {
+                    addResult('空数据测试', true, `正确返回400错误: ${data.error}`)
+                } else {
+                    addResult('空数据测试', false, `应该返回400错误，实际返回${response.status}`)
+                }
+            } catch (error) {
+                addResult('空数据测试', false, `请求失败: ${error.message}`)
+            }
+        }
+
+        async function testNetworkError() {
+            addResult('网络错误测试', true, '测试网络错误处理...', null, null)
+            
+            try {
+                const response = await fetch('http://192.168.2.120:3000/api/plan/nonexistent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ocrText: ['test'], subject: 'math', grade: '1' })
+                })
+                
+                if (response.status === 404) {
+                    addResult('网络错误测试', true, '正确返回404错误')
+                } else {
+                    addResult('网络错误测试', false, `期望404，实际${response.status}`)
+                }
+            } catch (error) {
+                addResult('网络错误测试', true, `网络错误正确处理: ${error.message}`)
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = ''
+            testStats = { total: 0, success: 0, failed: 0, times: [] }
+            updateStats()
+            addResult('系统', true, '结果已清空')
+        }
+
+        // 页面加载时进行基础测试
+        window.onload = function() {
+            addResult('系统', true, '学习计划API测试页面已加载')
+        }
+    </script>
+</body>
+</html> 
