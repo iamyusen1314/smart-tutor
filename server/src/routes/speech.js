@@ -25,7 +25,7 @@ const upload = multer({
 const SPEECH_CONFIG = {
   // 语音合成配置 - 使用正确的DashScope API格式
   tts: {
-    apiKey: process.env.DASHSCOPE_API_KEY,  // 🔧 移除默认测试密钥
+    apiKey: process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || 'sk-a791758fe21c4a719b2c632d5345996f',
     baseUrl: 'https://dashscope.aliyuncs.com/api/v1/services/audio/tts',  // 🔧 使用正确的API端点
     model: 'cosyvoice-v1',  
     timeout: 30000,
@@ -46,7 +46,7 @@ const SPEECH_CONFIG = {
   
   // 语音识别配置
   asr: {
-    apiKey: process.env.DASHSCOPE_API_KEY,  // 🔧 移除默认测试密钥
+    apiKey: process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || 'sk-a791758fe21c4a719b2c632d5345996f',
     baseUrl: 'https://dashscope.aliyuncs.com/api/v1/services/audio/asr',
     model: 'paraformer-realtime-v2',
     timeout: 30000
@@ -1138,5 +1138,332 @@ function getMockSynthesisResult(res, text, startTime) {
     }
   })
 }
+
+/**
+ * 📋 多学科语音播报配置 - 按PRD要求实现
+ */
+const SUBJECT_VOICE_CONFIG = {
+  math: {
+    voice: 'longxiaobai',
+    speed: 1.0,
+    textProcessor: 'preserveMathOperators',
+    triggers: ['计算', '答案', '正确', '错误', '再想想', '提示']
+  },
+  chinese: {
+    voice: 'longxiaochun', 
+    speed: 0.9,
+    textProcessor: 'preservePinyin',
+    triggers: ['拼音', '生字', '词语', '句子', '阅读', '写作']
+  },
+  english: {
+    voice: 'longxiaocheng',
+    speed: 0.8,
+    textProcessor: 'preserveEnglish',
+    triggers: ['单词', 'word', '发音', '语法', 'grammar', '句子']
+  },
+  science: {
+    voice: 'longwan',
+    speed: 1.0,
+    textProcessor: 'preserveObservation',
+    triggers: ['观察', '实验', '现象', '原因', '结果', '思考']
+  }
+}
+
+/**
+ * 🎯 序列号智能处理 - 将"1. 2. 3."转换为自然语音表达
+ */
+function processSequenceNumbers(text) {
+  if (!text || typeof text !== 'string') return text
+  
+  // 🔧 处理序列号模式：数字 + 点号 + 空格/内容
+  const patterns = [
+    // 处理"1. 2. 3."这样的序列号 - 增强版本
+    {
+      regex: /(\s|^|。|！|？)(\d+)\.\s*/g,
+      replacer: (match, prefix, number) => {
+        const num = parseInt(number)
+        const chineseNumbers = ['', '第一', '第二', '第三', '第四', '第五', '第六', '第七', '第八', '第九', '第十']
+        
+        if (num <= 10) {
+          return `${prefix}${chineseNumbers[num]}，`
+        } else {
+          return `${prefix}第${num}点，`
+        }
+      }
+    },
+    
+    // 处理"（1）（2）（3）"这样的序列号
+    {
+      regex: /[（(](\d+)[）)]/g, 
+      replacer: (match, number) => {
+        const num = parseInt(number)
+        const chineseNumbers = ['', '第一', '第二', '第三', '第四', '第五', '第六', '第七', '第八', '第九', '第十']
+        
+        if (num <= 10) {
+          return `${chineseNumbers[num]}，`
+        } else {
+          return `第${num}点，`
+        }
+      }
+    }
+  ]
+  
+  let result = text
+  patterns.forEach(pattern => {
+    result = result.replace(pattern.regex, pattern.replacer)
+  })
+  
+  console.log('🔢 序列号处理:', {
+    original: text.substring(0, 100),
+    processed: result.substring(0, 100),
+    hasSequence: text !== result
+  })
+  
+  return result
+}
+
+/**
+ * 🎯 多学科文本处理器 - 根据学科特点清理文本
+ */
+function processTextForSubject(text, subject = 'math') {
+  if (!text || typeof text !== 'string') return ''
+  
+  let processed = text.trim()
+  
+  // 🔢 第一步：处理序列号（所有学科都需要）
+  processed = processSequenceNumbers(processed)
+  
+  // 🔧 第二步：根据学科进行专门处理
+  switch (subject) {
+    case 'math':
+      // 数学：保留运算符，移除emoji
+      processed = processed
+        .replace(/[\u{1F600}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s+\-×÷=，。！？、；：""''（）,.!?;:()\-]/g, '')
+        .replace(/\s+/g, ' ').trim()
+      break
+      
+    case 'chinese':
+      // 语文：保留拼音音调，移除emoji
+      processed = processed
+        .replace(/[\u{1F600}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/[^\u4e00-\u9fa5a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ\s，。！？、；：""''（）]/g, '')
+        .replace(/\s+/g, ' ').trim()
+      break
+      
+    case 'english':
+      // 英语：保留英文，移除emoji和中文标点
+      processed = processed
+        .replace(/[\u{1F600}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/[^\u4e00-\u9fa5a-zA-Z\s,.!?;:()\-]/g, '')
+        .replace(/\s+/g, ' ').trim()
+      break
+      
+    case 'science':
+      // 科学：保留观察描述，移除emoji
+      processed = processed
+        .replace(/[\u{1F600}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s，。！？、；：""''（）()°℃]/g, '')
+        .replace(/\s+/g, ' ').trim()
+      break
+      
+    default:
+      // 默认处理：移除emoji和特殊字符
+      processed = processed
+        .replace(/[\u{1F600}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s，。！？、；：""''（）,.!?;:()\-]/g, '')
+        .replace(/\s+/g, ' ').trim()
+  }
+  
+  // 🔧 第三步：最终清理
+  processed = processed
+    .replace(/，+/g, '，')  // 合并多个逗号
+    .replace(/。+/g, '。')  // 合并多个句号
+    .replace(/\s+/g, ' ')   // 合并多个空格
+    .trim()
+  
+  return processed
+}
+
+/**
+ * 🎵 多学科语音播报接口
+ * POST /api/speech/broadcast
+ * 支持数学、语文、英语、科学四个学科的自动语音播报
+ */
+router.post('/broadcast', async (req, res) => {
+  const startTime = Date.now()
+  
+  try {
+    console.log('🎵 收到多学科语音播报请求:', {
+      text: req.body.text?.substring(0, 50) + (req.body.text?.length > 50 ? '...' : ''),
+      subject: req.body.subject,
+      priority: req.body.priority,
+      userId: req.body.userId
+    })
+
+    const { 
+      text, 
+      subject = 'math', 
+      priority = 'normal', 
+      autoPlay = true, 
+      userId 
+    } = req.body
+
+    // 参数验证
+    if (!text || text.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: '播报文本不能为空'
+      })
+    }
+
+    if (text.length > 500) {
+      return res.status(400).json({
+        success: false,
+        error: '播报文本长度不能超过500字符'
+      })
+    }
+
+    // 🎯 多学科语音配置
+    const subjectConfigs = {
+      math: {
+        voice: 'longxiaobai',
+        speed: 1.0,
+        description: '数学小老师 - 逻辑清晰，温暖鼓励'
+      },
+      chinese: {
+        voice: 'longxiaochun',
+        speed: 0.9,
+        description: '语文老师 - 声音甜美，富有感情'
+      },
+      english: {
+        voice: 'longxiaocheng',
+        speed: 0.8,
+        description: '英语老师 - 发音标准，活泼生动'
+      },
+      science: {
+        voice: 'longwan',
+        speed: 1.0,
+        description: '科学老师 - 知识渊博，引导探索'
+      }
+    }
+
+    // 获取学科配置
+    const config = subjectConfigs[subject] || subjectConfigs.math
+    console.log('🎯 使用学科配置:', {
+      subject: subject,
+      voice: config.voice,
+      speed: config.speed,
+      description: config.description
+    })
+
+    // 🔧 文本预处理 - 针对学科特点优化
+    let processedText = text.trim()
+    
+    // 序列号处理（如"1. 2. 3."）
+    processedText = processSequenceNumbers(processedText)
+    
+    // 学科特定文本处理
+    processedText = processTextForSubject(processedText, subject)
+
+    console.log('📝 文本处理完成:', {
+      originalLength: text.length,
+      processedLength: processedText.length,
+      originalText: text.substring(0, 30),
+      processedText: processedText.substring(0, 30)
+    })
+
+    // 🎵 执行语音合成
+    const synthResult = await performSpeechSynthesis(
+      processedText, 
+      config.voice, 
+      config.speed, 
+      1.0 // pitch
+    )
+    
+    const processingTime = Date.now() - startTime
+    
+    // 构造返回数据
+    const responseData = {
+      text: text,
+      processedText: processedText,
+      subject: subject,
+      voice: config.voice,
+      speed: config.speed,
+      priority: priority,
+      duration: synthResult.duration || Math.ceil(processedText.length / 3),
+      audioUrl: synthResult.audioUrl || `data:audio/mp3;base64,${synthResult.audioData}`,
+      audioData: synthResult.audioData,
+      audioSize: synthResult.audioSize || 0,
+      provider: synthResult.provider || 'alibaba-cloud',
+      responseTime: processingTime,
+      userId: userId,
+      timestamp: new Date().toISOString(),
+      qualityCheck: synthResult.qualityCheck || {
+        size: synthResult.audioSize || 0,
+        isValidSize: (synthResult.audioSize || 0) >= 1000,
+        estimatedDuration: Math.ceil(processedText.length / 3),
+        quality: synthResult.provider === 'mock' ? 'mock' : 'real',
+        isValidMP3: synthResult.provider !== 'mock'
+      }
+    }
+
+    console.log(`✅ 多学科语音播报成功 (${processingTime}ms):`, {
+      subject: subject,
+      voice: config.voice,
+      textLength: processedText.length,
+      audioSize: synthResult.audioSize,
+      duration: responseData.duration + 's',
+      provider: synthResult.provider
+    })
+    
+    res.json({
+      success: true,
+      data: responseData
+    })
+
+  } catch (error) {
+    const processingTime = Date.now() - startTime
+    console.error('❌ 多学科语音播报失败:', error)
+    
+    // 🔧 优雅降级：即使语音合成失败，也不影响主要功能
+    res.json({
+      success: false,
+      error: process.env.NODE_ENV === 'development' ? error.message : '语音播报服务暂时不可用',
+      fallback: true,
+      responseTime: processingTime,
+      subject: req.body.subject || 'math',
+      text: req.body.text
+    })
+  }
+})
+
+/**
+ * 🎯 获取学科语音配置接口 - GET /api/speech/subject-config
+ */
+router.get('/subject-config', (req, res) => {
+  const subject = req.query.subject
+  
+  if (subject && SUBJECT_VOICE_CONFIG[subject]) {
+    return res.json({
+      success: true,
+      data: {
+        subject: subject,
+        config: SUBJECT_VOICE_CONFIG[subject],
+        supportedSubjects: Object.keys(SUBJECT_VOICE_CONFIG)
+      }
+    })
+  }
+  
+  // 返回所有学科配置
+  return res.json({
+    success: true,
+    data: {
+      allConfigs: SUBJECT_VOICE_CONFIG,
+      supportedSubjects: Object.keys(SUBJECT_VOICE_CONFIG),
+      defaultSubject: 'math'
+    }
+  })
+})
 
 module.exports = router 
