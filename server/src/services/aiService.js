@@ -9,11 +9,11 @@ const axios = require('axios')
 const AI_CONFIG = {
   apiKey: process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || 'sk-a791758fe21c4a719b2c632d5345996f',
   baseUrl: process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-  model: 'qwen-turbo',
+  model: 'qwen-plus',  // ✅ 升级默认模型到qwen-plus
   temperature: 0.7,
   max_tokens: 4000,
-  timeout: 25000,  // 🔧 减少到25秒，避免长时间等待
-  retryTimes: 2    // �� 减少重试次数到2次，加快响应
+  timeout: 35000,  // ✅ 增加默认超时时间到35秒
+  retryTimes: 2    // 🔧 减少重试次数到2次，加快响应
 }
 
 /**
@@ -117,42 +117,54 @@ async function generateResponse(prompt, taskType = 'general', options = {}) {
  */
 function getTaskConfig(taskType) {
   const configs = {
+    // 🔧 快速任务组 - 保持qwen-turbo高速响应
     chat: {
-      model: 'qwen-turbo',   // 聊天使用最快模型
+      model: 'qwen-turbo',   // 快速聊天保持turbo
       temperature: 0.8,
       max_tokens: 800,
       timeout: 8000         // 聊天8秒超时
     },
-    plan: {
-      model: 'qwen-turbo',    // ✅ 基于测试结果，turbo在计划生成场景表现最佳
-      temperature: 0.3,
-      max_tokens: 1500,      // 🔧 适当增加token数量确保完整性
-      timeout: 20000         // 🔧 优化到20秒，平衡速度和稳定性
-    },
-    analysis: {
-      model: 'qwen-turbo',   // ✅ 快速分析任务
-      temperature: 0.2,
-      max_tokens: 1200,
-      timeout: 15000         // 🔧 减少超时时间
-    },
     ocr: {
-      model: 'qwen-turbo',
+      model: 'qwen-turbo',   // OCR识别保持turbo
       temperature: 0.1,
       max_tokens: 1000,
       timeout: 12000
     },
     correction: {
-      model: 'qwen-turbo',
+      model: 'qwen-turbo',   // 快速答案检查保持turbo
       temperature: 0.3,
       max_tokens: 800,
       timeout: 10000
     },
-    // 🆕 新增：复杂推理任务可选择plus模型
-    complex_reasoning: {
-      model: 'qwen-plus',
+    
+    // ✅ 核心AI辅导组 - 升级到qwen-plus提升教学质量
+    plan: {
+      model: 'qwen-plus',    // ✅ 升级学习计划生成到plus
+      temperature: 0.3,
+      max_tokens: 2000,      // ✅ 增加token提升计划质量
+      timeout: 35000         // ✅ 增加超时适应plus模型
+    },
+    analysis: {
+      model: 'qwen-plus',    // ✅ 升级学习分析到plus
       temperature: 0.2,
-      max_tokens: 2000,
-      timeout: 30000
+      max_tokens: 1800,      // ✅ 增加token提升分析深度
+      timeout: 30000         // ✅ 增加超时适应plus模型
+    },
+    
+    // ✅ 复杂推理组 - 使用qwen-plus深度分析
+    complex_reasoning: {
+      model: 'qwen-plus',    // 复杂推理任务
+      temperature: 0.2,
+      max_tokens: 2500,      // ✅ 进一步增加token
+      timeout: 40000         // ✅ 更长超时适应复杂任务
+    },
+    
+    // 🆕 新增：学习报告生成专用配置
+    report: {
+      model: 'qwen-plus',    // ✅ 学习报告升级到plus
+      temperature: 0.4,
+      max_tokens: 3000,      // ✅ 大幅增加token支持详细报告
+      timeout: 45000         // ✅ 最长超时适应报告生成
     }
   }
   

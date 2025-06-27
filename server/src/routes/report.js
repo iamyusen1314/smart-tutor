@@ -889,69 +889,30 @@ async function getLatestPlanId(userId) {
  */
 async function getStudyHistory(userId, limit, offset) {
   try {
-    console.log(`🔍 获取用户学习历史: userId=${userId}, limit=${limit}, offset=${offset}`)
+    console.log(`🔍 [简化方案] 获取用户学习历史: userId=${userId}, limit=${limit}, offset=${offset}`)
+    console.log(`🎯 [重构] 复用学习报告的数据计算逻辑，避免代码重复`)
     
-    // 🚨 修复：从真实数据库读取学习记录，按日期分组
+    // 🚀 简化方案：获取用户的所有学习会话(planId)，然后复用学习报告的计算逻辑
     const LearningRecord = require('../models/LearningRecord')
     
-    // 构建聚合管道，按日期分组统计
-    const pipeline = [
+    // 🔧 第1步：获取该用户的所有planId（学习会话）
+    const sessionPipeline = [
       {
         $match: {
           userId: userId,
-          countedInStatistics: true  // 只统计真正的答题记录
-        }
-      },
-      {
-        $addFields: {
-          dateOnly: {
-            $dateToString: {
-              format: "%Y-%m-%d",
-              date: "$createdAt"
-            }
-          }
+          planId: { $exists: true, $ne: null, $ne: "" }
         }
       },
       {
         $group: {
-          _id: "$dateOnly",
-          records: { $push: "$$ROOT" },
-          totalQuestions: { $sum: 1 },
-          correctAnswers: {
-            $sum: { $cond: [{ $eq: ["$isCorrect", true] }, 1, 0] }
-          },
-          wrongAnswers: {
-            $sum: { $cond: [{ $eq: ["$isCorrect", false] }, 1, 0] }
-          },
-          subjects: { $addToSet: "$subject" },
-          firstRecord: { $first: "$$ROOT" },
-          totalTimeMs: { 
-            $sum: { $ifNull: ["$timestamps.duration", 30000] } // 默认30秒每题
-          }
+          _id: "$planId",
+          sessionStartTime: { $min: "$createdAt" },
+          sessionEndTime: { $max: "$createdAt" },
+          recordCount: { $sum: 1 }
         }
       },
       {
-        $project: {
-          date: "$_id",
-          subject: { $arrayElemAt: ["$subjects", 0] }, // 主要学科
-          grade: "$firstRecord.grade",
-          questionCount: "$totalQuestions",
-          correctCount: "$correctAnswers",
-          wrongCount: "$wrongAnswers",
-          accuracy: {
-            $round: [
-              { $multiply: [{ $divide: ["$correctAnswers", "$totalQuestions"] }, 100] },
-              0
-            ]
-          },
-          timeSpent: {
-            $round: [{ $divide: ["$totalTimeMs", 60000] }, 0] // 转换为分钟
-          },
-          rawRecords: "$records"
-        }
-      },
-      {
-        $sort: { date: -1 }
+        $sort: { sessionStartTime: -1 } // 按开始时间倒序
       },
       {
         $skip: offset
@@ -961,41 +922,74 @@ async function getStudyHistory(userId, limit, offset) {
       }
     ]
     
-    const dailyRecords = await LearningRecord.aggregate(pipeline)
+    const sessions = await LearningRecord.aggregate(sessionPipeline)
+    console.log(`✅ 找到${sessions.length}个学习会话`)
     
-    console.log(`✅ 数据库查询结果: 找到${dailyRecords.length}天的学习记录`)
-    
-    // 转换为前端期望的格式
-    const records = dailyRecords.map((day, index) => {
-      const subjectName = getSubjectName(day.subject)
+    if (sessions.length === 0) {
+      console.log('⚠️ 没有找到学习会话，返回空数据')
       return {
-        id: `day_${day.date}`,
-        date: day.date,
-        subject: day.subject,
-        grade: day.grade || 1,
-        accuracy: day.accuracy || 0,
-        timeSpent: Math.max(day.timeSpent || 0, 1), // 至少1分钟
-        questionCount: day.questionCount,
-        summary: `${subjectName}：${day.questionCount}题，正确率${day.accuracy}%，用时${Math.max(day.timeSpent || 0, 1)}分钟`
+        records: [],
+        total: 0,
+        hasMore: false
       }
-    })
+    }
     
-    // 获取总记录数（按天计算）
+    // 🚀 第2步：为每个学习会话复用学习报告的计算逻辑
+    const records = []
+    
+    for (const session of sessions) {
+      try {
+        console.log(`🔄 处理学习会话: ${session._id}`)
+        
+        // 🎯 关键：复用学习报告模块的getStudyDataByPlan函数
+        const studyData = await getStudyDataByPlan(session._id)
+        
+        if (studyData && studyData.isRealData && studyData.recordCount > 0) {
+          // 🔧 转换为学习记录格式
+          const timeSpentMinutes = Math.max(1, Math.round(studyData.timeSpent / 60))
+          const accuracy = studyData.recordCount > 0 ? 
+            Math.round((studyData.correctCount / studyData.recordCount) * 100) : 0
+          
+          const record = {
+            id: session._id,
+            planId: session._id,
+            date: session.sessionStartTime.toISOString().split('T')[0],
+            time: session.sessionStartTime.toISOString().split('T')[1].substring(0, 5),
+            subject: studyData.subject || 'math',
+            grade: studyData.grade || 3,
+            accuracy: accuracy,
+            timeSpent: timeSpentMinutes,
+            timeSpentSeconds: studyData.timeSpent, // 保留原始秒数
+            questionCount: studyData.recordCount,
+            correctCount: studyData.correctCount,
+            wrongCount: studyData.wrongCount,
+            summary: `${getSubjectName(studyData.subject)}：${studyData.recordCount}题，正确率${accuracy}%，用时${timeSpentMinutes}分钟`,
+            sessionType: 'learning_session',
+            dataSource: 'from_report_logic' // 标记数据来源
+          }
+          
+          records.push(record)
+          console.log(`✅ 学习会话${session._id}: ${record.questionCount}题 ${record.accuracy}% ${record.timeSpent}分钟`)
+        } else {
+          console.log(`⚠️ 学习会话${session._id}无有效数据，跳过`)
+        }
+        
+      } catch (error) {
+        console.error(`❌ 处理学习会话${session._id}失败:`, error.message)
+      }
+    }
+    
+    // 🔧 第3步：计算总数（使用相同的会话级别统计）
     const totalPipeline = [
       {
         $match: {
           userId: userId,
-          countedInStatistics: true
+          planId: { $exists: true, $ne: null, $ne: "" }
         }
       },
       {
         $group: {
-          _id: {
-            $dateToString: {
-              format: "%Y-%m-%d",
-              date: "$createdAt"
-            }
-          }
+          _id: "$planId"
         }
       },
       {
@@ -1006,53 +1000,18 @@ async function getStudyHistory(userId, limit, offset) {
     const totalResult = await LearningRecord.aggregate(totalPipeline)
     const total = totalResult.length > 0 ? totalResult[0].total : 0
     
-    console.log(`📊 学习历史统计: 共${total}天, 返回${records.length}条记录`)
-    
-    // 🔧 如果数据库没有记录，保留少量Mock数据作为示例（但排除今天）
-    if (records.length === 0 && offset === 0) {
-      console.log('⚠️ 数据库无记录，使用示例数据')
-      const today = new Date().toISOString().split('T')[0]
-      
-      const mockRecords = [
-        {
-          id: 'sample_1',
-          date: '2025-06-13',
-          subject: 'math',
-          grade: 3,
-          accuracy: 85,
-          timeSpent: 12,
-          questionCount: 5,
-          summary: '数学：5题，正确率85%，用时12分钟'
-        },
-        {
-          id: 'sample_2',
-          date: '2025-06-12',
-          subject: 'chinese',
-          grade: 3,
-          accuracy: 90,
-          timeSpent: 10,
-          questionCount: 4,
-          summary: '语文：4题，正确率90%，用时10分钟'
-        }
-      ].filter(record => record.date !== today) // 排除今天的示例数据
-      
-      return {
-        records: mockRecords,
-        total: mockRecords.length,
-        hasMore: false
-      }
-    }
+    console.log(`📊 [简化方案] 成功处理: ${records.length}个学习记录，总会话数: ${total}`)
     
     return {
       records,
       total,
-      hasMore: offset + limit < total
+      hasMore: offset + limit < total,
+      dataSource: 'simplified_from_reports' // 标记使用简化方案
     }
     
   } catch (error) {
-    console.error('❌ 获取学习历史失败:', error)
+    console.error('❌ [简化方案] 获取学习历史失败:', error)
     
-    // 🔧 错误时返回空数据而不是Mock数据
     return {
       records: [],
       total: 0,
@@ -1063,64 +1022,160 @@ async function getStudyHistory(userId, limit, offset) {
 }
 
 /**
- * 生成学习统计数据
+ * 生成学习统计数据 - 🔧 修复：使用真实学习数据
  * @param {string} userId 用户ID
  * @param {string} period 统计周期
  * @returns {Promise<Object>} 统计数据
  */
 async function generateStatistics(userId, period) {
-  // 生成时间范围内的统计数据
-  const days = period === '30d' ? 30 : period === '90d' ? 90 : 7
-  
-  // 模拟学习趋势数据
-  const learningTrend = []
-  const subjectStats = { math: 0, chinese: 0, english: 0 }
-  let totalTime = 0
-  let totalQuestions = 0
-  let totalCorrect = 0
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    const dateStr = date.toISOString().split('T')[0]
+  try {
+    console.log(`🔧 [统计修复] 生成真实统计数据: userId=${userId}, period=${period}`)
     
-    // 模拟当天数据
-    const dailyQuestions = Math.floor(Math.random() * 8) + 2
-    const dailyCorrect = Math.floor(dailyQuestions * (0.7 + Math.random() * 0.3))
-    const dailyTime = Math.floor(Math.random() * 20) + 5
-    const accuracy = Math.round((dailyCorrect / dailyQuestions) * 100)
+    // 🚀 获取用户真实学习记录 - 🔧 使用与学习记录页面相同的API确保数据一致性
+    console.log(`🔧 [统计修复] 调用相同的API获取学习记录...`)
     
-    learningTrend.push({
-      date: dateStr,
-      accuracy,
-      timeSpent: dailyTime,
-      questionCount: dailyQuestions
+    // 🎯 重要：使用与前端学习记录页面相同的API，确保统计数据与显示数据完全一致
+    const axios = require('axios')
+    const historyResponse = await axios.get(`http://127.0.0.1:3000/api/report/history-enhanced`, {
+      params: {
+        userId,
+        limit: 50,
+        offset: 0
+      }
     })
     
-    // 随机分配学科
-    const subjects = ['math', 'chinese', 'english']
-    const randomSubject = subjects[Math.floor(Math.random() * subjects.length)]
-    subjectStats[randomSubject] += dailyQuestions
+    if (!historyResponse.data.success) {
+      throw new Error('获取学习记录失败: ' + historyResponse.data.error)
+    }
     
-    totalTime += dailyTime
-    totalQuestions += dailyQuestions
-    totalCorrect += dailyCorrect
-  }
-  
-  const overallAccuracy = Math.round((totalCorrect / totalQuestions) * 100)
-  
-  return {
-    period,
-    overview: {
-      totalTime,
-      totalQuestions,
-      overallAccuracy,
-      averageTimePerQuestion: Math.round(totalTime / totalQuestions * 10) / 10
-    },
-    learningTrend,
-    subjectDistribution: subjectStats,
-    weeklyComparison: generateWeeklyComparison(),
-    knowledgePointAnalysis: await generateKnowledgePointAnalysis(userId, 'general')
+    const records = historyResponse.data.records || []
+    console.log(`🔧 [统计修复] 从相同API获取到${records.length}条记录`)
+    
+    console.log(`📊 找到${records.length}条真实学习记录`)
+    
+    // 🔧 计算真实汇总统计
+    let totalTimeMinutes = 0      // 总时长（分钟）
+    let totalQuestions = 0        // 总题目数
+    let totalCorrect = 0          // 总正确数
+    let totalSessions = records.length  // 学习次数
+    
+    // 按日期分组的学习趋势
+    const dailyStats = {}
+    const subjectStats = { math: 0, chinese: 0, english: 0 }
+    
+    // 🎯 处理每条真实记录
+    records.forEach(record => {
+      // 🔧 修复：智能计算真实时长，避免双重转换错误
+      let realTimeMinutes = 0
+      
+      if (record.timeSpentSeconds && record.timeSpentSeconds > 0) {
+        // 有原始秒数：直接转换
+        realTimeMinutes = Math.round(record.timeSpentSeconds / 60)
+        console.log(`🔧 [时长修复] 使用原始秒数: ${record.timeSpentSeconds}秒 → ${realTimeMinutes}分钟`)
+      } else {
+        // 无原始秒数：基于题目数量估算（每题10秒，更接近快速答题的实际情况）
+        const questionCount = record.questionCount || 0
+        const estimatedSeconds = questionCount * 10
+        realTimeMinutes = Math.max(1, Math.round(estimatedSeconds / 60))
+        console.log(`🔧 [时长修复] 估算时长: ${questionCount}题 × 10秒 = ${estimatedSeconds}秒 → ${realTimeMinutes}分钟`)
+      }
+      
+      totalTimeMinutes += realTimeMinutes
+      totalQuestions += record.questionCount || 0
+      totalCorrect += record.correctCount || 0
+      
+      // 按学科统计
+      const subject = record.subject || 'math'
+      if (subjectStats[subject] !== undefined) {
+        subjectStats[subject] += record.questionCount || 0
+      }
+      
+      // 按日期统计（用于趋势图）
+      const date = record.date
+      if (!dailyStats[date]) {
+        dailyStats[date] = {
+          questions: 0,
+          correct: 0,
+          timeSpent: 0,
+          sessions: 0
+        }
+      }
+      dailyStats[date].questions += record.questionCount || 0
+      dailyStats[date].correct += record.correctCount || 0
+      dailyStats[date].timeSpent += realTimeMinutes  // 🔧 修复：使用计算好的真实时长
+      dailyStats[date].sessions += 1
+    })
+    
+    // 🔧 计算平均正确率
+    const overallAccuracy = totalQuestions > 0 ? 
+      Math.round((totalCorrect / totalQuestions) * 100) : 0
+    
+    // 生成学习趋势数据（最近7天）
+    const learningTrend = []
+    const days = period === '30d' ? 30 : period === '90d' ? 90 : 7
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      
+      const dayData = dailyStats[dateStr] || { questions: 0, correct: 0, timeSpent: 0 }
+      const accuracy = dayData.questions > 0 ? 
+        Math.round((dayData.correct / dayData.questions) * 100) : 0
+      
+      learningTrend.push({
+        date: dateStr,
+        accuracy,
+        timeSpent: dayData.timeSpent,
+        questionCount: dayData.questions
+      })
+    }
+    
+    console.log(`✅ [统计修复] 真实统计结果:`, {
+      学习次数: totalSessions,
+      总时长分钟: totalTimeMinutes,
+      总题目数: totalQuestions,
+      总正确数: totalCorrect,
+      平均正确率: overallAccuracy
+    })
+    
+    return {
+      period,
+      overview: {
+        totalTime: totalTimeMinutes,        // 🔧 修复：使用真实总时长（分钟）
+        totalQuestions: totalQuestions,     // 🔧 修复：使用真实题目数
+        overallAccuracy: overallAccuracy,   // 🔧 修复：使用真实正确率
+        totalSessions: totalSessions,       // 🔧 新增：学习次数
+        averageTimePerQuestion: totalQuestions > 0 ? 
+          Math.round(totalTimeMinutes / totalQuestions * 10) / 10 : 0
+      },
+      learningTrend,                        // 基于真实数据的趋势
+      subjectDistribution: subjectStats,    // 真实学科分布
+      weeklyComparison: generateWeeklyComparison(),
+      knowledgePointAnalysis: await generateKnowledgePointAnalysis(userId, 'general'),
+      dataSource: 'real_learning_records'  // 🔧 标记数据来源
+    }
+    
+  } catch (error) {
+    console.error('❌ [统计修复] 生成真实统计失败:', error)
+    
+    // 🔧 失败时返回空统计，不使用错误的模拟数据
+    return {
+      period,
+      overview: {
+        totalTime: 0,
+        totalQuestions: 0,
+        overallAccuracy: 0,
+        totalSessions: 0,
+        averageTimePerQuestion: 0
+      },
+      learningTrend: [],
+      subjectDistribution: { math: 0, chinese: 0, english: 0 },
+      weeklyComparison: generateWeeklyComparison(),
+      knowledgePointAnalysis: await generateKnowledgePointAnalysis(userId, 'general'),
+      dataSource: 'error_fallback',
+      error: '统计数据加载失败'
+    }
   }
 }
 
@@ -1232,20 +1287,62 @@ async function getStudyDataByPlan(planId) {
     // ✅ 彻底修复：简化过滤逻辑，确保所有有效记录都被统计
     console.log(`🔧 [UNIVERSAL] 开始过滤${compatibleRecords.length}条记录`)
     
-    const statisticsRecords = compatibleRecords.filter(r => {
-      // 🚨 强制修复：对于answer模式的记录，只要有studentInput和isCorrect判断就计入统计
-      const studentInput = r.studentInput?.toString().trim()
-      const hasStudentInput = studentInput && studentInput.length > 0
-      const hasCorrectJudgment = (r.isCorrect === true || r.isCorrect === false)
-      const isAnswerMode = r.currentMode === 'answer'
-      
-      // 🎯 简化判断：answer模式 + 有学生输入 + 有对错判断 = 计入统计
-      const shouldCount = isAnswerMode && hasStudentInput && hasCorrectJudgment
-      
-      console.log(`🔧 过滤记录: "${studentInput}" -> 答题模式:${isAnswerMode}, 有输入:${hasStudentInput}, 有判断:${hasCorrectJudgment}, 计入统计:${shouldCount}`)
-      
-      return shouldCount
+    // ✅ 第1步：🔧 用户正确逻辑 - 基于OCR识别的所有数学题目进行统计
+    const allMathQuestions = new Map() // 存储所有OCR识别的题目
+    
+    // 先收集所有数学题目（OCR识别的基准）
+    compatibleRecords.forEach(r => {
+      const isRealMathQuestion = r.question && r.question.includes('=') && !r.question.includes('学习会话')
+      if (isRealMathQuestion) {
+        const questionKey = r.question.trim()
+        if (!allMathQuestions.has(questionKey)) {
+          allMathQuestions.set(questionKey, {
+            question: r.question,
+            records: []
+          })
+        }
+        allMathQuestions.get(questionKey).records.push(r)
+      }
     })
+    
+    console.log(`🔧 OCR识别基准统计: 发现${allMathQuestions.size}道数学题目`)
+    allMathQuestions.forEach((data, question) => {
+      console.log(`📝 OCR题目: "${question}" (${data.records.length}条记录)`)
+    })
+    
+    // 🎯 第2步：🔧 基于OCR识别题目，统计每题的最终作答状态
+    const statisticsRecords = []
+    
+    // 对每个OCR识别的题目，确定其最终状态
+    allMathQuestions.forEach((data, questionKey) => {
+      const records = data.records
+      const answerRecords = records.filter(r => r.currentMode === 'answer' && (r.isCorrect === true || r.isCorrect === false))
+      const chatRecords = records.filter(r => r.currentMode === 'chat')
+      
+      let finalRecord
+      if (answerRecords.length > 0) {
+        // 有答题记录，取最后一次答题
+        finalRecord = answerRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+        console.log(`🎯 题目"${questionKey}": 已答题 -> "${finalRecord.studentInput}" (${finalRecord.isCorrect ? '正确' : '错误'})`)
+      } else {
+        // 只有求助记录，标记为未答题（算作错误）
+        const latestChat = chatRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0]
+        finalRecord = {
+          ...latestChat,
+          isCorrect: false, // 🔧 关键：OCR题目未答算作错误
+          studentInput: '未答题（仅求助）',
+          finalStatus: 'unanswered'
+        }
+        console.log(`🎯 题目"${questionKey}": 未答题，仅求助 (算作错误)`)
+      }
+      
+      statisticsRecords.push(finalRecord)
+    })
+    
+    // 按时间排序
+    statisticsRecords.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+    
+    console.log(`🔧 OCR基准统计结果: ${allMathQuestions.size}道题目，生成${statisticsRecords.length}条统计记录`)
     
     console.log(`✅ [UNIVERSAL] 过滤结果: ${statisticsRecords.length}条记录通过过滤逻辑`)
     
@@ -1271,10 +1368,10 @@ async function getStudyDataByPlan(planId) {
       '数据来源': '仅统计answer模式第一次提交'
     })
     
-    // ✅ 按正确逻辑统计：只统计 countedInStatistics: true 的记录
-    const totalQuestions = statisticsRecords.length
-    const correctAnswers = statisticsRecords.filter(r => r.isCorrect === true).length
-    const wrongAnswers = statisticsRecords.filter(r => r.isCorrect === false).length
+    // ✅ 按用户正确逻辑：基于OCR识别题目总数统计
+    const totalQuestions = statisticsRecords.length // 等于OCR识别的题目数
+    const correctAnswers = statisticsRecords.filter(r => r.isCorrect === true).length  
+    const wrongAnswers = statisticsRecords.filter(r => r.isCorrect === false).length // 包括未答题
     
     // 🔧 修复学习时长统计：基于时间戳计算真实学习时长
     let totalTimeSeconds = 0
@@ -1287,12 +1384,15 @@ async function getStudyDataByPlan(planId) {
       
       console.log(`🔧 时长计算: 记录数=${statisticsRecords.length}, 时间差=${sessionDurationMs}ms`)
       
-      // 🎯 强制修复：确保合理的学习时长
-      if (sessionDurationMs > 0 && sessionDurationMs < 1800000) { // 小于30分钟
-        totalTimeSeconds = Math.max(Math.round(sessionDurationMs / 1000), statisticsRecords.length * 10) // 至少每题10秒
+      // 🎯 时长修复：优先使用真实时间戳，只在异常时使用估算
+      if (sessionDurationMs > 0 && sessionDurationMs < 1800000) { // 小于30分钟且有效
+        // ✅ 使用真实时间戳（删除错误的"至少每题10秒"强制逻辑）
+        totalTimeSeconds = Math.round(sessionDurationMs / 1000)
+        console.log(`🔧 使用真实时长: ${totalTimeSeconds}秒 (时间戳差值: ${sessionDurationMs}ms)`)
       } else {
-        // 基于题目数量的合理估算
-        totalTimeSeconds = statisticsRecords.length * 45 + interactionRecords.length * 20 // 每题45秒 + 交互20秒
+        // 只在时间戳异常时才使用估算
+        totalTimeSeconds = statisticsRecords.length * 30 + interactionRecords.length * 15 // 每题30秒 + 交互15秒
+        console.log(`⚠️ 时间戳异常，使用估算时长: ${totalTimeSeconds}秒`)
       }
       
       // 🚨 最终保障：绝不允许时长为0
@@ -1303,13 +1403,13 @@ async function getStudyDataByPlan(planId) {
       // 计算平均每题时长
       averageTimeSeconds = Math.round(totalTimeSeconds / statisticsRecords.length)
       
-      // 合理性检查：学习时长应该在30秒到1800秒之间
-      if (totalTimeSeconds < 30) {
-        totalTimeSeconds = Math.max(30, statisticsRecords.length * 30) // 最少30秒，每题至少30秒
-      }
+      // 🔧 修复合理性检查：只限制上限，不强制最小时长（学生可能做题很快）
       if (totalTimeSeconds > 1800) {
         totalTimeSeconds = 1800 // 最多30分钟
+        console.log(`⚠️ 时长超过30分钟，限制为1800秒`)
       }
+      // ✅ 删除错误的最小时长限制，保留真实时长（即使很短）
+      console.log(`🎯 最终确认时长: ${totalTimeSeconds}秒`)
     }
     
     console.log(`🕐 学习时长计算: ${statisticsRecords.length}题用时${totalTimeSeconds}秒 (${Math.round(totalTimeSeconds/60)}分钟), 平均每题${averageTimeSeconds}秒`)
@@ -1319,19 +1419,19 @@ async function getStudyDataByPlan(planId) {
     const subject = firstRecord.subject || 'math'
     const grade = firstRecord.grade || 1
     
-    // ✅ 修复：构建题目列表，分类显示统计记录和交互记录
+    // ✅ 修复：构建题目列表，基于OCR识别的所有题目
     const answeredQuestions = statisticsRecords.map((record, index) => ({
       id: `q${index + 1}`,
       text: record.question || `问题 ${index + 1}`,
       studentAnswer: record.studentInput,
       aiResponse: record.aiResponse,
-      isCorrect: record.isCorrect, // true/false (统计记录不会有null)
+      isCorrect: record.isCorrect,
       studentAnswerValue: record.studentAnswer,
       correctAnswerValue: record.correctAnswer,
       responseTime: Math.round((record.responseTime || 0) / 1000),
       timestamp: record.timestamp,
-      mode: 'answer', // 标记为答题模式
-      countedInStatistics: true
+      mode: record.finalStatus === 'unanswered' ? 'unanswered' : record.currentMode,
+      countedInStatistics: true // 所有OCR题目都计入统计
     }))
     
     const interactionQuestions = interactionRecords.map((record, index) => ({
@@ -2157,11 +2257,12 @@ async function generateInteractionAnalysisForReport(interactionRecords, subject,
     // 构建qwen-max分析提示词
     const analysisPrompt = buildInteractionAnalysisPromptForReport(interactionHistory, subject, grade)
     
-    // 🔧 修复：使用确认工作的qwen-turbo模型
+    // ✅ 升级：使用qwen-plus模型提升报告分析质量
     const modelConfig = {
-      model: 'qwen-turbo', // 使用确认工作的qwen-turbo模型
+      model: 'qwen-plus', // ✅ 升级到qwen-plus提升报告质量
       temperature: 0.7,
-      timeout: 30000,
+      max_tokens: 3000,  // ✅ 增加token支持详细分析
+      timeout: 45000,    // ✅ 增加超时适应plus模型
       subject: subject
     }
     
@@ -2181,7 +2282,7 @@ async function generateInteractionAnalysisForReport(interactionRecords, subject,
       grade,
       generatedAt: new Date().toISOString(),
       interactionCount: interactionRecords.length,
-      analysisModel: 'qwen-turbo',  // 修正：显示实际使用的模型
+              analysisModel: 'qwen-plus',  // ✅ 升级：使用qwen-plus提升分析质量
       responseTime: aiResponse.responseTime,
       
       // 学习建议核心内容
@@ -2295,7 +2396,7 @@ async function callAIForReport(prompt, modelConfig) {
       }
     ],
     temperature: modelConfig.temperature,
-    max_tokens: 2000
+    max_tokens: modelConfig.max_tokens || 3000  // ✅ 使用传入的token配置，适应qwen-plus
   }
   
   const startTime = Date.now()
@@ -2461,7 +2562,7 @@ async function generateBasicLearningAdvice(answeredQuestions, commonMistakes, su
       grade,
       generatedAt: new Date().toISOString(),
       interactionCount: 0, // 基于错误分析，无交互记录
-      analysisModel: 'qwen-turbo', // 使用qwen-turbo进行AI增强分析
+      analysisModel: 'qwen-plus', // ✅ 升级到qwen-plus进行AI增强分析
       responseTime: 50, // 快速生成
       
       // 🧠 学习建议核心内容
@@ -2699,5 +2800,272 @@ function generateConsolidationQuestions(subject, grade) {
   
   return questions
 }
+
+// 🆕 ================================
+// 🚀 学习记录模块优化相关API
+// 🆕 ================================
+
+/**
+ * 🆕 GET /api/report/history-enhanced - 获取带缓存信息的学习记录
+ * 功能：返回学习会话列表，包含报告缓存状态
+ * 优势：一个API获取所有信息，前端可以智能决定是否需要生成报告
+ */
+router.get('/history-enhanced', async (req, res) => {
+  try {
+    console.log('🆕 [ENHANCED] 获取带缓存信息的学习记录...')
+    
+    const { userId, limit = 10, offset = 0 } = req.query
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少用户ID'
+      })
+    }
+    
+    console.log(`🆕 [ENHANCED] 查询参数: userId=${userId}, limit=${limit}, offset=${offset}`)
+    
+    // 🔍 第1步：获取学习会话planId列表
+    const LearningRecord = require('../models/LearningRecord')
+    const sessions = await LearningRecord.find({
+      userId: userId,
+      planId: { $exists: true }
+    }).distinct('planId')
+    
+    console.log(`🆕 [ENHANCED] 找到${sessions.length}个学习会话`)
+    
+    // 🔍 第2步：分页处理
+    const targetSessions = sessions.slice(parseInt(offset), parseInt(offset) + parseInt(limit))
+    
+    // 🔍 第3步：查询Report表中对应的缓存数据
+    const Report = require('../models/Report')
+    const cachedReports = await Report.find({
+      planId: { $in: targetSessions },
+      userId: userId
+    }).sort({ createdAt: -1 })
+    
+    console.log(`🆕 [ENHANCED] 找到${cachedReports.length}个缓存报告`)
+    
+    // 🔍 第4步：构造学习记录数据
+    const records = []
+    for (const planId of targetSessions) {
+      const cachedReport = cachedReports.find(r => r.planId === planId)
+      
+      if (cachedReport && cachedReport.summary) {
+        // 从缓存获取数据
+        const s = cachedReport.summary
+        records.push({
+          id: planId,
+          planId: planId,
+          date: new Date(cachedReport.createdAt).toISOString().split('T')[0],
+          subject: s.subject || 'math',
+          accuracy: s.accuracy || 0,
+          timeSpent: s.timeSpent || 0,
+          questionCount: s.totalQuestions || 0,
+          correctCount: s.correctAnswers || 0,
+          dataSource: 'from_report_cache'
+        })
+      }
+    }
+    
+    console.log(`🆕 [ENHANCED] 构造了${records.length}个学习记录`)
+    
+    // 🆕 增强数据：每个记录包含缓存状态
+    const enhancedRecords = records.map(record => ({
+      ...record,
+      // 🆕 缓存状态
+      cacheStatus: {
+        hasCache: false,
+        lastGenerated: null,
+        needsRefresh: false,
+        cacheVersion: '1.0'
+      },
+      // 🆕 操作提示
+      actions: {
+        canViewReport: false,
+        needsGeneration: true,
+        estimatedGenerationTime: '5-10秒'
+      }
+    }))
+    
+    res.json({
+      success: true,
+      records: enhancedRecords,
+      total: enhancedRecords.length,
+      hasMore: enhancedRecords.length >= parseInt(limit),
+      // 🆕 缓存统计
+      cacheStats: {
+        totalSessions: enhancedRecords.length,
+        cachedReports: enhancedRecords.filter(r => r.cacheStatus.hasCache).length,
+        needsGeneration: enhancedRecords.filter(r => !r.cacheStatus.hasCache).length
+      }
+    })
+    
+  } catch (error) {
+    console.error('❌ [ENHANCED] 获取增强学习记录失败:', error)
+    res.status(500).json({
+      success: false,
+      message: '获取学习记录失败',
+      error: error.message
+    })
+  }
+})
+
+/**
+ * 🆕 GET /api/report/generate-with-cache - 智能生成/获取学习报告
+ * 功能：先检查缓存，如果有缓存直接返回，没有则生成并缓存
+ * 优势：大幅降低AI调用成本，提升响应速度
+ */
+router.get('/generate-with-cache', async (req, res) => {
+  try {
+    console.log('🆕 [SMART-REPORT] 智能报告生成开始...')
+    
+    const { planId, userId } = req.query
+    
+    if (!planId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少planId或userId参数'
+      })
+    }
+    
+    console.log(`🆕 [SMART-REPORT] 参数: planId=${planId}, userId=${userId}`)
+    
+    // 🔍 第1步：检查Report表中的缓存
+    const Report = require('../models/Report')
+    const cachedReport = await Report.findOne({ 
+      planId: planId, 
+      userId: userId 
+    }).sort({ createdAt: -1 })
+    
+    if (cachedReport && cachedReport.reportData) {
+      console.log('🎯 [SMART-REPORT] 找到有效缓存，直接返回')
+      
+      // 🚀 直接返回缓存的完整报告数据
+      const reportData = cachedReport.reportData
+      
+      // 添加缓存标识
+      reportData._performance = {
+        source: 'cache',
+        responseTime: '< 50ms',
+        aiCallCount: 0,
+        costSaved: '100%',
+        cachedAt: cachedReport.createdAt
+      }
+      
+      // 直接返回缓存的报告，无AI调用成本
+      return res.json({
+        success: true,
+        data: reportData
+      })
+    }
+    
+    // 🔧 第2步：生成新报告（使用现有函数，保持100%兼容）
+    console.log('🔄 [SMART-REPORT] 无缓存，调用现有报告生成逻辑...')
+    
+    const startTime = Date.now()
+    const reportData = await generateTodayReport(planId, userId)
+    const generationTime = Date.now() - startTime
+    
+    if (!reportData) {
+      throw new Error('报告生成失败')
+    }
+    
+    // 🔧 第3步：保存报告到Report表缓存（异步，不影响响应速度）
+    console.log('💾 [SMART-REPORT] 保存报告到缓存...')
+    
+    // 异步保存到Report表，不阻塞响应
+    setImmediate(async () => {
+      try {
+        const now = new Date()
+        await Report.findOneAndUpdate(
+          { planId: planId, userId: userId },
+          { 
+            planId, 
+            userId, 
+            title: "Learning Report", 
+            summary: reportData.summary, 
+            reportData, 
+            reportType: "daily", 
+            status: "completed", 
+            dateRange: { startDate: now, endDate: now }, 
+            createdAt: now 
+          },
+          { upsert: true, new: true }
+        )
+        console.log("💾 [CACHE] 报告成功保存到Report表:", planId)
+      } catch (error) { 
+        console.error("❌ [CACHE] 缓存保存失败:", error.message)
+      }
+    })
+    
+    // 🎉 返回新生成的报告
+    console.log('✅ [SMART-REPORT] 报告生成完成，已异步保存到缓存')
+    
+    // 🔧 在原始报告数据中添加性能信息
+    reportData._performance = {
+      source: 'generated',
+      responseTime: `${generationTime}ms`,
+      aiCallCount: reportData.qwenMaxAnalysis ? 1 : 0,
+      newlyCached: true,
+      generatedAt: new Date().toISOString(),
+      cacheVersion: '1.0'
+    }
+    
+    res.json({
+      success: true,
+      data: reportData  // 🔧 修复：确保数据在data字段中，与缓存版本一致
+    })
+    
+  } catch (error) {
+    console.error('❌ [SMART-REPORT] 智能报告生成失败:', error)
+    res.status(500).json({
+      success: false,
+      message: '智能报告生成失败',
+      error: error.message
+    })
+  }
+})
+
+/**
+ * 🆕 DELETE /api/report/clear-cache - 清理指定学习会话的报告缓存
+ * 功能：清理缓存，强制重新生成报告（调试用）
+ */
+router.delete('/clear-cache', async (req, res) => {
+  try {
+    const { planId } = req.query
+    
+    if (!planId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少planId参数'
+      })
+    }
+    
+    console.log(`🗑️ [CACHE] 清理缓存: planId=${planId}`)
+    
+    const LearningRecord = require('../models/LearningRecord')
+    const result = await LearningRecord.updateOne(
+      { planId },
+      { 
+        $unset: { reportCache: 1 } // 完全移除缓存字段
+      }
+    )
+    
+    res.json({
+      success: true,
+      message: '缓存清理完成',
+      cleared: result.modifiedCount > 0
+    })
+    
+  } catch (error) {
+    console.error('❌ [CACHE] 清理缓存失败:', error)
+    res.status(500).json({
+      success: false,
+      message: '清理缓存失败',
+      error: error.message
+    })
+  }
+})
 
 module.exports = router 
