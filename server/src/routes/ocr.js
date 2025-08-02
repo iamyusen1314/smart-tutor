@@ -552,156 +552,50 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     await fs.rename(req.file.path, permanentPath).catch(console.warn)
     console.log('📸 图片已保存到:', permanentPath)
 
-    // 🔑 使用增强的OCR提示词
-    const enhancedPrompt = `你是一个专业的OCR识别专家。请仔细识别这张图片中的所有文字内容，特别注意：
+    // 🎯 获取多题目分离参数 (支持单文件上传的多题目分离)
+    const enableQuestionSplit = req.body.enableQuestionSplit === 'true' || req.body.enableQuestionSplit === true
+    
+    // 🔑 调用统一的OCR识别逻辑 (支持多题目分离)
+    const ocrResult = await performSingleOCR(base64Image, req.file.originalname, enableQuestionSplit)
+    
+    console.log('✅ 文件上传OCR识别成功')
+    console.log('📝 识别结果:', ocrResult.ocrText)
+    console.log('🎓 检测到学科:', ocrResult.subject)
+    console.log('📚 检测到年级:', ocrResult.grade)
+    console.log('📸 图片保存路径:', permanentPath)
 
-1. 🔢 数学题目：请完整识别数学表达式、运算符号、数字
-2. ✏️ 手写文字：请识别手写的数字、汉字和英文
-3. 📝 印刷文字：请识别印刷体文字内容  
-4. 📐 图形标注：注意几何图形中的标注文字
-5. 📋 表格内容：如果有表格，请逐行识别
-
-请按以下格式输出：
-- 每行一个完整的题目或文本内容
-- 保持数学表达式的完整性
-- 如果是选择题，包含选项内容
-- 忽略明显的噪点或无意义字符
-
-开始识别：`
-
-    // 🔑 构建增强的请求数据
-    const requestData = {
-      model: DASHSCOPE_CONFIG.model,
-      
-      input: {
-        messages: [
-          {
-            role: "system",
-            content: [
-              {
-                text: "你是一个专业的OCR识别助手，专门识别小学数学作业。请仔细识别图片中的文字内容，特别关注数学题目。"
-              }
-            ]
-          },
-          {
-            role: "user", 
-            content: [
-              {
-                // 🔑 使用完整的data URL格式
-                image: `data:image/jpeg;base64,${base64Image}`
-              },
-              {
-                text: enhancedPrompt
-              }
-            ]
-          }
-        ]
-      },
-      
-      // 🔑 优化参数配置
-      parameters: {
-        max_tokens: 2000,
-        temperature: 0.1,  // 降低随机性，提高准确率
-        // 添加图片处理参数
-        image_params: {
-          min_pixels: 3136,
-          max_pixels: 6422528, 
-          enable_rotate: true,
-          max_image_width: 2048,
-          max_image_height: 2048
-        }
-      }
-    }
-
-    console.log('📤 发送增强OCR请求到DashScope...')
-    console.log('🎯 使用模型:', requestData.model)
-
-    // 发送请求到DashScope
-    const response = await axios.post(
-      `${DASHSCOPE_CONFIG.baseURL}/api/v1/services/aigc/multimodal-generation/generation`,
-      requestData,
-      {
-        headers: {
-          'Authorization': `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+    return res.json({
+      success: true,
+      data: {
+        ocrText: ocrResult.ocrText,
+        subject: ocrResult.subject,
+        grade: ocrResult.grade,
+        confidence: ocrResult.confidence,
+        model: ocrResult.model,
+        timestamp: new Date().toISOString(),
+        requestId: ocrResult.requestId,
+        rawText: ocrResult.rawText, // 保留原始文本用于调试
+        
+        // 🔑 添加学习计划生成需要的额外字段
+        estimatedTotalTime: Math.max(ocrResult.ocrText.length * 2, 5), // 基于题目数量估算时间
+        questionCount: ocrResult.questionCount,
+        
+        fileInfo: {
+          originalname: req.file.originalname,
+          size: req.file.size
         },
-        timeout: DASHSCOPE_CONFIG.timeout
+        
+        // 🎯 图片文件路径，支持图文验证 - 返回完整HTTP URL  
+        // 🔧 修复：提取文件名生成正确的URL路径
+        imagePath: `http://8.134.252.224:3000/uploads/${req.file.filename + path.extname(req.file.originalname)}`,
+        
+        // 🎯 多题目分离相关信息
+        isMultiRegion: ocrResult.isMultiRegion || false,
+        regionCount: ocrResult.regionCount || 1,
+        processingMode: ocrResult.processingMode || 'standard',
+        questionAnalysis: ocrResult.questionAnalysis
       }
-    )
-
-    console.log('📥 DashScope响应状态:', response.status)
-
-    if (response.status === 200 && response.data) {
-      // 🔑 改进的结果解析
-      const choice = response.data.output?.choices?.[0]
-      if (choice && choice.message) {
-        let ocrText = ''
-        
-        // 处理不同的响应格式
-        if (typeof choice.message.content === 'string') {
-          ocrText = choice.message.content
-        } else if (Array.isArray(choice.message.content)) {
-          // 提取文本内容
-          const textContents = choice.message.content
-            .filter(item => item.text)
-            .map(item => item.text)
-          ocrText = textContents.join('\n')
-        } else if (choice.message.content?.text) {
-          ocrText = choice.message.content.text
-        }
-
-        // 🔑 改进的文本处理
-        // 🧹 首先清理OCR文本，移除干扰文字
-        const cleanedOcrText = await cleanOcrText(ocrText)
-        console.log('🧹 [单图OCR] 文本清理完成:', {
-          原始长度: ocrText.length,
-          清理后长度: cleanedOcrText.length,
-          清理效果: cleanedOcrText.substring(0, 100) + '...'
-        })
-        
-        const processedText = enhancedProcessOCRText(cleanedOcrText)
-        
-        // 🔑 智能检测学科和年级
-        const detectedSubject = detectSubject(cleanedOcrText)
-        const detectedGrade = detectGrade(cleanedOcrText)
-        
-        console.log('✅ 文件上传增强OCR识别成功')
-        console.log('📝 处理后识别结果:', processedText)
-        console.log('🎓 检测到学科:', detectedSubject)
-        console.log('📚 检测到年级:', detectedGrade)
-        console.log('📸 图片保存路径:', permanentPath)
-
-        return res.json({
-          success: true,
-          data: {
-            ocrText: processedText,
-            subject: detectedSubject,
-            grade: detectedGrade,
-            confidence: calculateConfidence(ocrText),
-            model: DASHSCOPE_CONFIG.model,
-            timestamp: new Date().toISOString(),
-            requestId: response.data.request_id,
-            rawText: ocrText, // 保留原始文本用于调试
-            
-            // 🔑 添加学习计划生成需要的额外字段
-            estimatedTotalTime: Math.max(processedText.length * 2, 5), // 基于题目数量估算时间
-            questionCount: processedText.length,
-            
-            fileInfo: {
-              originalname: req.file.originalname,
-              size: req.file.size
-            },
-            
-            // 🎯 新增：图片文件路径，支持图文验证 - 返回完整HTTP URL  
-            // 🔧 修复：提取文件名生成正确的URL路径
-            imagePath: `http://8.134.252.224:3000/uploads/${req.file.filename + path.extname(req.file.originalname)}`
-          }
-        })
-      }
-    }
-
-    throw new Error('DashScope返回格式异常')
+    })
 
   } catch (error) {
     console.error('❌ 文件上传增强OCR识别失败:', error)
@@ -791,8 +685,11 @@ router.post('/upload-batch', upload.array('images', 10), async (req, res) => {
         const imageBuffer = await fs.readFile(file.path)
         const base64Image = imageBuffer.toString('base64')
 
-        // 🔑 调用现有的OCR识别逻辑（复用已验证的代码）
-        const ocrResult = await performSingleOCR(base64Image, file.originalname)
+        // 🎯 获取多题目分离参数 (支持批量模式的多题目分离)
+        const enableQuestionSplit = req.body.enableQuestionSplit === 'true' || req.body.enableQuestionSplit === true
+        
+        // 🔑 调用现有的OCR识别逻辑（复用已验证的代码，支持多题目分离）
+        const ocrResult = await performSingleOCR(base64Image, file.originalname, enableQuestionSplit)
         
         results.push({
           fileIndex: i,
@@ -886,7 +783,63 @@ router.post('/upload-batch', upload.array('images', 10), async (req, res) => {
  * @param {string} fileName - 文件名
  * @returns {Promise<Object>} OCR识别结果
  */
-async function performSingleOCR(base64Image, fileName = 'unknown') {
+async function performSingleOCR(base64Image, fileName = 'unknown', enableQuestionSplit = false) {
+  console.log(`🔄 [批量OCR] 处理文件: ${fileName}, 多题目分离: ${enableQuestionSplit ? '启用' : '禁用'}`)
+  
+  // 🎯 新增：可选的多题目分离预处理 (与主路由保持一致)
+  if (enableQuestionSplit === true) {
+    console.log('🔍 [批量OCR-多题目分离] 启用题目分离模式...')
+    
+    try {
+      // 构建图片数据格式
+      const imageData = base64Image.startsWith('data:') ? base64Image : `data:image/jpeg;base64,${base64Image}`
+      
+      // 步骤1：检测题目区域
+      const questionRegions = await detectQuestionRegionsWithAliyun(imageData)
+      
+      if (questionRegions.length > 1) {
+        console.log('📊 [批量OCR-多题目分离] 检测到', questionRegions.length, '个题目区域，开始分别处理...')
+        
+        // 步骤2：分别对每个区域进行OCR (递归调用，但禁用分离功能避免无限循环)
+        const regionOCRResults = []
+        
+        for (let i = 0; i < questionRegions.length; i++) {
+          try {
+            console.log(`🔄 [批量OCR-多题目分离] 处理区域 ${i + 1}/${questionRegions.length}...`)
+            
+            // 对每个区域进行独立OCR识别 (递归调用但禁用分离)
+            const regionResult = await performSingleOCR(base64Image, `${fileName}-区域${i + 1}`, false)
+            regionOCRResults.push({
+              regionIndex: i + 1,
+              regionInfo: questionRegions[i],
+              result: regionResult
+            })
+            
+            console.log(`✅ [批量OCR-多题目分离] 区域 ${i + 1} 识别完成`)
+          } catch (error) {
+            console.error(`❌ [批量OCR-多题目分离] 区域 ${i + 1} 识别失败:`, error.message)
+            regionOCRResults.push({
+              regionIndex: i + 1,
+              regionInfo: questionRegions[i],
+              error: error.message
+            })
+          }
+        }
+        
+        // 步骤3：智能合并分离后的结果
+        const mergedResult = mergeRegionOCRResultsForBatch(regionOCRResults, fileName)
+        console.log('✅ [批量OCR-多题目分离] 题目分离处理完成，返回合并结果')
+        return mergedResult
+        
+      } else {
+        console.log('📊 [批量OCR-多题目分离] 未检测到多个题目区域，使用标准流程')
+      }
+      
+    } catch (error) {
+      console.error('❌ [批量OCR-多题目分离] 分离处理失败，回退到标准流程:', error.message)
+    }
+  }
+  
   // 🔑 使用与现有API相同的增强提示词
   const enhancedPrompt = `你是一个专业的OCR识别专家。请仔细识别这张图片中的所有文字内容，特别注意：
 
@@ -2748,6 +2701,82 @@ function mergeMultiRegionOCRResults(ocrResults) {
   }
   
   console.log('✅ [结果合并] 完成，共', combinedTexts.length, '个题目')
+  return mergedResult
+}
+
+/**
+ * 🔄 合并分离后的OCR结果 - 批量模式专用
+ * @param {Array} regionOCRResults - 各个区域的OCR结果
+ * @param {string} fileName - 文件名
+ * @returns {Object} 合并后的OCR结果
+ */
+function mergeRegionOCRResultsForBatch(regionOCRResults, fileName) {
+  console.log('🔄 [批量OCR-结果合并] 开始合并分离后的结果...', regionOCRResults.length, '个区域')
+  
+  const combinedTexts = []
+  let totalQuestionCount = 0
+  let averageConfidence = 0
+  let combinedSubject = 'math'
+  let combinedGrade = 1
+  
+  // 遍历每个区域的结果
+  regionOCRResults.forEach((regionResult, index) => {
+    if (regionResult.error) {
+      console.warn(`⚠️ [批量OCR-结果合并] 区域 ${regionResult.regionIndex} 处理失败:`, regionResult.error)
+      return
+    }
+    
+    const result = regionResult.result
+    if (result && result.ocrText && Array.isArray(result.ocrText)) {
+      // 添加区域标识
+      result.ocrText.forEach((text, textIndex) => {
+        combinedTexts.push(`[区域${regionResult.regionIndex}-题目${textIndex + 1}] ${text}`)
+      })
+      
+      totalQuestionCount += result.questionCount || result.ocrText.length
+      averageConfidence += result.confidence || 0
+      
+      // 保持第一个有效结果的学科和年级
+      if (index === 0 || !combinedSubject) {
+        combinedSubject = result.subject || 'math'
+        combinedGrade = result.grade || 1
+      }
+    } else {
+      console.warn(`⚠️ [批量OCR-结果合并] 区域 ${regionResult.regionIndex} 结果格式异常`)
+    }
+  })
+  
+  averageConfidence = regionOCRResults.length > 0 ? averageConfidence / regionOCRResults.length : 0
+  
+  const mergedResult = {
+    ocrText: combinedTexts,
+    rawText: combinedTexts.join('\n'),
+    subject: combinedSubject,
+    grade: combinedGrade,
+    confidence: averageConfidence,
+    model: 'qwen-vl-ocr-latest',
+    questionCount: totalQuestionCount,
+    fileName: fileName,
+    
+    // 批量模式特殊标识
+    isMultiRegion: true,
+    regionCount: regionOCRResults.length,
+    processingMode: 'batch-question-split',
+    
+    questionAnalysis: {
+      type: 'calculation',
+      name: '分离题目组合',
+      level: 1,
+      interaction: false,
+      confidence: averageConfidence,
+      difficulty: 'mixed',
+      processingStrategy: 'region-based-separation',
+      features: ['multi-region', 'batch-processed'],
+      needsVerification: true
+    }
+  }
+  
+  console.log('✅ [批量OCR-结果合并] 完成，共', combinedTexts.length, '个题目，来自', regionOCRResults.length, '个区域')
   return mergedResult
 }
 
