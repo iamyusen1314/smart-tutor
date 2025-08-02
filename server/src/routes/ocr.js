@@ -133,9 +133,9 @@ router.post('/recognize', async (req, res) => {
       model: DASHSCOPE_CONFIG.model
     })
 
-    // 🚫 临时禁用多题目分离功能，直接使用标准流程解决重复和页码问题
+    // 🎯 重新启用多题目分离功能，修复根本问题
     const { enableQuestionSplit } = req.body
-    if (false && enableQuestionSplit === true) {
+    if (enableQuestionSplit === true) {
       console.log('🔍 [多题目分离] 启用题目分离模式...')
       
       try {
@@ -216,15 +216,15 @@ router.post('/recognize', async (req, res) => {
                 }
               }
 
-              // 发送区域OCR请求
+              // 🔧 修复：使用与标准OCR相同的API调用格式
               const regionResponse = await axios.post(
-                `${DASHSCOPE_CONFIG.baseURL}/api/v1/services/aigc/multimodal-generation/generation`,
+                DASHSCOPE_CONFIG.baseURL,
                 regionRequestData,
                 {
                   headers: {
                     'Authorization': `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'X-DashScope-SSE': 'disable'
                   },
                   timeout: DASHSCOPE_CONFIG.timeout
                 }
@@ -362,15 +362,15 @@ router.post('/recognize', async (req, res) => {
     console.log('🎯 使用模型:', requestData.model)
     console.log('📊 请求大小:', Math.round(JSON.stringify(requestData).length / 1024) + 'KB')
 
-    // 发送请求到DashScope
+    // 🔧 修复：发送请求到DashScope使用正确的API格式
     const response = await axios.post(
-      `${DASHSCOPE_CONFIG.baseURL}/api/v1/services/aigc/multimodal-generation/generation`,
+      DASHSCOPE_CONFIG.baseURL,
       requestData,
       {
         headers: {
           'Authorization': `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'X-DashScope-SSE': 'disable'
         },
         timeout: DASHSCOPE_CONFIG.timeout
       }
@@ -810,8 +810,8 @@ router.post('/upload-batch', upload.array('images', 10), async (req, res) => {
 async function performSingleOCR(base64Image, fileName = 'unknown', enableQuestionSplit = false) {
   console.log(`🔄 [批量OCR] 处理文件: ${fileName}, 多题目分离: ${enableQuestionSplit ? '启用' : '禁用'}`)
   
-  // 🚫 临时禁用多题目分离功能，直接使用标准流程解决重复和页码问题
-  if (false && enableQuestionSplit === true) {
+  // 🎯 重新启用多题目分离功能，修复根本问题
+  if (enableQuestionSplit === true) {
     console.log('🔍 [批量OCR-多题目分离] 启用题目分离模式...')
     
     try {
@@ -928,15 +928,15 @@ async function performSingleOCR(base64Image, fileName = 'unknown', enableQuestio
     }
   }
 
-  // 发送请求到DashScope
+  // 🔧 修复：发送请求到DashScope使用正确的API格式
   const response = await axios.post(
-    `${DASHSCOPE_CONFIG.baseURL}/api/v1/services/aigc/multimodal-generation/generation`,
+    DASHSCOPE_CONFIG.baseURL,
     requestData,
     {
       headers: {
         'Authorization': `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'X-DashScope-SSE': 'disable'
       },
       timeout: DASHSCOPE_CONFIG.timeout
     }
@@ -2615,15 +2615,16 @@ async function detectQuestionRegionsWithAliyun(imageData) {
       }
     }
 
-    // 发送版面分析请求
+    // 🔧 修复：发送版面分析请求使用正确的API格式
     console.log('📤 [版面分析] 发送请求到阿里云...')
     const response = await axios.post(
-      `${DASHSCOPE_CONFIG.baseURL}/api/v1/services/aigc/multimodal-generation/generation`,
+      DASHSCOPE_CONFIG.baseURL,
       layoutRequestData,
       {
         headers: {
           'Authorization': `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-DashScope-SSE': 'disable'
         },
         timeout: 30000
       }
