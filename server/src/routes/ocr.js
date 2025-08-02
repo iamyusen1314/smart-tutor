@@ -2541,6 +2541,7 @@ async function detectQuestionRegionsWithAliyun(imageData) {
     }
 
     // 发送版面分析请求
+    console.log('📤 [版面分析] 发送请求到阿里云...')
     const response = await axios.post(
       `${DASHSCOPE_CONFIG.baseURL}/api/v1/services/aigc/multimodal-generation/generation`,
       layoutRequestData,
@@ -2552,10 +2553,33 @@ async function detectQuestionRegionsWithAliyun(imageData) {
         timeout: 30000
       }
     )
+    
+    console.log('📥 [版面分析] 收到响应，状态:', response.status)
 
     if (response.status === 200 && response.data?.output?.choices?.[0]?.message?.content) {
-      const analysisResult = response.data.output.choices[0].message.content
+      let analysisResult = response.data.output.choices[0].message.content
+      
+      // 🔧 修复：处理不同的响应格式，确保analysisResult是字符串
+      if (typeof analysisResult === 'object') {
+        if (Array.isArray(analysisResult)) {
+          // 如果是数组，提取文本内容
+          analysisResult = analysisResult
+            .filter(item => item && (item.text || typeof item === 'string'))
+            .map(item => typeof item === 'string' ? item : item.text)
+            .join('\n')
+        } else if (analysisResult.text) {
+          // 如果是对象且有text字段
+          analysisResult = analysisResult.text
+        } else {
+          // 其他情况转为字符串
+          analysisResult = JSON.stringify(analysisResult)
+        }
+      } else if (typeof analysisResult !== 'string') {
+        analysisResult = String(analysisResult || '')
+      }
+      
       console.log('📊 [版面分析] AI分析结果:', analysisResult)
+      console.log('📊 [版面分析] 结果类型:', typeof analysisResult)
       
       // 解析分析结果
       const questionRegions = parseLayoutAnalysisResult(analysisResult)
@@ -2569,6 +2593,10 @@ async function detectQuestionRegionsWithAliyun(imageData) {
     
   } catch (error) {
     console.error('❌ [版面分析] 失败:', error.message)
+    console.error('❌ [版面分析] 错误详情:', error.stack)
+    if (error.response) {
+      console.error('❌ [版面分析] API响应错误:', error.response.status, error.response.data)
+    }
     // 安全回退：如果版面分析失败，按单题目处理
     return [{ region: 'full', confidence: 1.0 }]
   }
@@ -2583,9 +2611,19 @@ function parseLayoutAnalysisResult(analysisText) {
   const regions = []
   
   try {
+    // 🔧 修复：确保analysisText是字符串类型
+    if (typeof analysisText !== 'string') {
+      console.warn('⚠️ [版面分析] analysisText不是字符串类型:', typeof analysisText, analysisText)
+      return [{ region: 'full', confidence: 1.0 }]
+    }
+    
+    console.log('🔍 [版面分析] 开始解析文本:', analysisText.substring(0, 200) + '...')
+    
     // 提取题目数量
     const countMatch = analysisText.match(/题目数量[：:]\s*(\d+)个?/i)
     const questionCount = countMatch ? parseInt(countMatch[1]) : 1
+    
+    console.log('📊 [版面分析] 检测到题目数量:', questionCount)
     
     if (questionCount <= 1) {
       return [{ region: 'full', confidence: 1.0 }]
@@ -2636,6 +2674,8 @@ function parseLayoutAnalysisResult(analysisText) {
     
   } catch (error) {
     console.error('❌ [版面分析] 结果解析失败:', error.message)
+    console.error('❌ [版面分析] 错误堆栈:', error.stack)
+    console.error('❌ [版面分析] 输入数据:', typeof analysisText, analysisText)
     return [{ region: 'full', confidence: 1.0 }]
   }
   
