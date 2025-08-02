@@ -2909,6 +2909,8 @@ function mergeRegionOCRResultsForBatch(regionOCRResults, fileName) {
   let combinedGrade = 1
   
   // 🔧 智能处理每个区域的结果，添加过滤逻辑
+  let globalQuestionIndex = 1  // 🎯 全局题目编号，确保每个题目有唯一编号
+  
   regionOCRResults.forEach((regionResult, index) => {
     if (regionResult.error) {
       console.warn(`⚠️ [批量OCR-结果合并] 区域 ${regionResult.regionIndex} 处理失败:`, regionResult.error)
@@ -2948,19 +2950,20 @@ function mergeRegionOCRResultsForBatch(regionOCRResults, fileName) {
           return
         }
         
-        // 🏷️ 生成智能题目标识
+        // 🏷️ 生成智能题目标识 - 使用全局编号确保唯一性
         let questionLabel = ''
         if (regionInfo.questionType) {
-          questionLabel = `题目${regionResult.regionIndex}（${regionInfo.questionType}）`
+          questionLabel = `题目${globalQuestionIndex}（${regionInfo.questionType}）`
         } else {
-          questionLabel = `题目${regionResult.regionIndex}`
+          questionLabel = `题目${globalQuestionIndex}`
         }
         
         // 🎯 只有非标题内容才添加到结果中
         const finalText = `${questionLabel}: ${cleanedText}`
         combinedTexts.push(finalText)
         
-        console.log(`✅ [批量OCR-结果合并] 区域${regionResult.regionIndex} 处理完成: ${questionLabel}`)
+        console.log(`✅ [批量OCR-结果合并] 题目${globalQuestionIndex} 处理完成: ${questionLabel}`)
+        globalQuestionIndex++  // 🔄 递增全局题目编号
       })
       
       totalQuestionCount += result.questionCount || result.ocrText.length
