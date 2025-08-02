@@ -133,9 +133,9 @@ router.post('/recognize', async (req, res) => {
       model: DASHSCOPE_CONFIG.model
     })
 
-    // 🎯 新增：可选的多题目分离预处理 (不影响现有功能)
+    // 🚫 临时禁用多题目分离功能，直接使用标准流程解决重复和页码问题
     const { enableQuestionSplit } = req.body
-    if (enableQuestionSplit === true) {
+    if (false && enableQuestionSplit === true) {
       console.log('🔍 [多题目分离] 启用题目分离模式...')
       
       try {
@@ -810,8 +810,8 @@ router.post('/upload-batch', upload.array('images', 10), async (req, res) => {
 async function performSingleOCR(base64Image, fileName = 'unknown', enableQuestionSplit = false) {
   console.log(`🔄 [批量OCR] 处理文件: ${fileName}, 多题目分离: ${enableQuestionSplit ? '启用' : '禁用'}`)
   
-  // 🎯 新增：可选的多题目分离预处理 (与主路由保持一致)
-  if (enableQuestionSplit === true) {
+  // 🚫 临时禁用多题目分离功能，直接使用标准流程解决重复和页码问题
+  if (false && enableQuestionSplit === true) {
     console.log('🔍 [批量OCR-多题目分离] 启用题目分离模式...')
     
     try {
