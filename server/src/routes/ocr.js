@@ -1367,6 +1367,34 @@ function enhancedProcessOCRText(text) {
       .trim()
   }).filter(item => item.length > 1)
 
+  // 🔧 页码和标题过滤：移除明显的页码和标题内容
+  textArray = textArray.filter(item => {
+    const trimmedItem = item.trim()
+    
+    // 检测页码模式
+    const pageNumberPatterns = [
+      /^\d{1,3}$/,                 // 单独的页码数字 (如 "47")
+      /^\s*\d{1,3}\s*$/,           // 带空格的页码数字
+      /^第?\d+页?$/,               // 页码标识
+      /^\(\d+\)$/,                 // 括号序号
+      /^第\d+题$/,                 // 题目序号标题
+      /^\d+以内.*运算.*$/,         // 运算标题
+      /^完成时间.*$/,              // 时间提示
+      /^.*练习.*$/,                // 练习标题
+      /^数学.*$/                   // 学科标题
+    ]
+    
+    // 检查是否匹配页码模式
+    const isPageNumber = pageNumberPatterns.some(pattern => pattern.test(trimmedItem))
+    
+    if (isPageNumber) {
+      console.log('🚫 检测到页码/标题内容，已过滤:', trimmedItem)
+      return false
+    }
+    
+    return true
+  })
+  
   // 🔑 关键修复：去重处理，解决题目重复统计问题
   const uniqueTextArray = []
   const seenQuestions = new Set()
@@ -2658,16 +2686,23 @@ function parseLayoutAnalysisResult(analysisText) {
   const regions = []
   
   try {
-    // 🔧 修复：确保analysisText是字符串类型
-    if (typeof analysisText !== 'string') {
-      console.warn('⚠️ [版面分析] analysisText不是字符串类型:', typeof analysisText, analysisText)
+    // 🔧 修复：强制确保analysisText是字符串类型
+    let safeAnalysisText = analysisText
+    if (typeof safeAnalysisText !== 'string') {
+      console.warn('⚠️ [版面分析] analysisText不是字符串类型:', typeof safeAnalysisText, safeAnalysisText)
+      safeAnalysisText = String(safeAnalysisText || '')
+    }
+    
+    // 🔧 双重检查：如果转换后仍然无效，返回默认结果
+    if (!safeAnalysisText || typeof safeAnalysisText !== 'string') {
+      console.error('❌ [版面分析] 无法将analysisText转换为有效字符串')
       return [{ region: 'full', confidence: 1.0 }]
     }
     
-    console.log('🔍 [版面分析] 开始解析文本:', analysisText.substring(0, 200) + '...')
+    console.log('🔍 [版面分析] 开始解析文本:', safeAnalysisText.substring(0, 200) + '...')
     
     // 提取题目数量
-    const countMatch = analysisText.match(/题目数量[：:]\s*(\d+)个?/i)
+    const countMatch = safeAnalysisText.match(/题目数量[：:]\s*(\d+)个?/i)
     const questionCount = countMatch ? parseInt(countMatch[1]) : 1
     
     console.log('📊 [版面分析] 检测到题目数量:', questionCount)
@@ -2677,7 +2712,7 @@ function parseLayoutAnalysisResult(analysisText) {
     }
     
     // 🔧 解析新格式：题目X内容：[类型]，位置：[区域]
-    const contentMatches = analysisText.match(/题目\d+内容[：:]\s*([^，\n\r]+)[，,]\s*位置[：:]\s*([^\n\r]+)/gi)
+    const contentMatches = safeAnalysisText.match(/题目\d+内容[：:]\s*([^，\n\r]+)[，,]\s*位置[：:]\s*([^\n\r]+)/gi)
     
     if (contentMatches && contentMatches.length > 1) {
       console.log('📊 [版面分析] 检测到详细题目信息:', contentMatches)
@@ -2723,7 +2758,7 @@ function parseLayoutAnalysisResult(analysisText) {
     } else {
       // 🔄 回退到旧格式解析
       console.log('⚠️ [版面分析] 使用旧格式解析...')
-      const positionMatches = analysisText.match(/题目\d+位置[：:]\s*([^\n\r]+)/gi)
+      const positionMatches = safeAnalysisText.match(/题目\d+位置[：:]\s*([^\n\r]+)/gi)
       
       if (positionMatches && positionMatches.length > 1) {
         positionMatches.forEach((match, index) => {
