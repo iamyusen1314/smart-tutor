@@ -153,15 +153,31 @@ router.post('/recognize', async (req, res) => {
             console.log(`🔄 [多题目分离] 处理第${i + 1}个区域:`, region.region)
             
             try {
-              // 针对特定区域的OCR prompt
-              const regionPrompt = `你是一个专业的OCR识别专家。请仔细识别这张图片中${region.region === 'top_half' ? '上半部分' : region.region === 'bottom_half' ? '下半部分' : region.region === 'left_half' ? '左半部分' : region.region === 'right_half' ? '右半部分' : ''}的文字内容，特别注意：
+              // 🔧 针对特定区域和题目类型的智能OCR prompt
+              const regionDescription = region.region === 'top_half' ? '上半部分' : region.region === 'bottom_half' ? '下半部分' : region.region === 'left_half' ? '左半部分' : region.region === 'right_half' ? '右半部分' : '指定区域'
+              const questionTypeHint = region.questionType ? `（预期题目类型：${region.questionType}）` : ''
+              
+              const regionPrompt = `你是一个专业的小学作业OCR识别专家。请仔细识别这张图片中**${regionDescription}**的题目内容${questionTypeHint}，重点关注：
 
-1. 🔢 数学题目：请完整识别数学表达式、运算符号、数字
-2. ✏️ 手写文字：请识别手写的数字、汉字和英文  
-3. 📝 印刷文字：请识别印刷体文字内容
-4. 🎯 重点关注：只识别${region.description || region.region}区域的内容，忽略其他区域
+📝 **识别目标：**
+1. 🔢 具体的题目内容：如计算式、操作指令等
+2. 📋 题目要求：如"连一连"、"比一比"、"算一算"、"填一填"等
+3. ✏️ 题目中的数字、符号、文字内容
+4. 📐 图形中的标注数字和说明
 
-请输出这个区域的完整题目内容，如果该区域没有题目则输出"无题目"：`
+🚫 **忽略内容：**
+1. 📖 页面标题：如"20以内退位减法运算"等
+2. 📄 页码：如"47"等
+3. 🎨 装饰文字：背景文字、状态提示等
+
+🎯 **关注区域：**只识别图片的${regionDescription}，忽略其他区域的内容
+
+✅ **输出要求：**
+- 输出该区域的完整题目内容
+- 保持题目的完整性和逻辑性
+- 如果该区域没有完整题目，输出"无题目"
+
+请开始识别：`
 
               // 构建区域OCR请求
               const regionRequestData = {
@@ -273,22 +289,30 @@ router.post('/recognize', async (req, res) => {
     // 🔑 原有OCR流程（保持完全不变，确保向后兼容）
     console.log('🔄 [单题目OCR] 执行原有OCR流程...')
 
-    // 🔑 使用增强的OCR提示词，提高识别准确率
-    const enhancedPrompt = `你是一个专业的OCR识别专家。请仔细识别这张图片中的所有文字内容，特别注意：
+    // 🔑 使用增强的OCR提示词，智能过滤标题和干扰信息
+    const enhancedPrompt = `你是一个专业的小学作业OCR识别专家。请仔细识别这张图片中的**题目内容**，重点关注：
 
-1. 🔢 数学题目：请完整识别数学表达式、运算符号、数字
-2. ✏️ 手写文字：请识别手写的数字、汉字和英文
-3. 📝 印刷文字：请识别印刷体文字内容  
-4. 📐 图形标注：注意几何图形中的标注文字
-5. 📋 表格内容：如果有表格，请逐行识别
+📝 **要识别的内容：**
+1. 🔢 具体的数学题目：计算式、填空题、应用题等
+2. 📋 题目要求：连一连、填一填、算一算、比一比等具体操作指令
+3. ✏️ 题目中的数字、符号、文字内容
+4. 📐 图形题中的标注数字和说明文字
+5. ☑️ 选择题的选项内容(A/B/C/D)
 
-请按以下格式输出：
-- 每行一个完整的题目或文本内容
-- 保持数学表达式的完整性
-- 如果是选择题，包含选项内容
-- 忽略明显的噪点或无意义字符
+🚫 **要忽略的内容：**
+1. 📖 **页面标题**：如"20以内退位减法运算"、"数学练习"等顶部标题
+2. 📄 **页码编号**：如页面底部的"47"、"第15页"等
+3. ⏰ **时间提示**：如"完成时间___分"等时间相关文字
+4. 🎨 **装饰元素**：边框文字、水印、背景文字等
+5. 📋 **练习状态**：如"很棒哦"、"还不错"、"加油哦"等状态提示
 
-开始识别：`
+✅ **输出格式要求：**
+- 每行输出一个独立的题目
+- 如果一张图有多个题目，分别输出，用题目序号区分
+- 只输出纯粹的题目内容，不包含标题和装饰文字
+- 保持数学表达式和题目要求的完整性
+
+请开始识别图片中的题目内容：`
 
     // 🔑 构建增强的请求数据
     const requestData = {
@@ -840,22 +864,30 @@ async function performSingleOCR(base64Image, fileName = 'unknown', enableQuestio
     }
   }
   
-  // 🔑 使用与现有API相同的增强提示词
-  const enhancedPrompt = `你是一个专业的OCR识别专家。请仔细识别这张图片中的所有文字内容，特别注意：
+  // 🔑 使用与主路由相同的智能过滤提示词
+  const enhancedPrompt = `你是一个专业的小学作业OCR识别专家。请仔细识别这张图片中的**题目内容**，重点关注：
 
-1. 🔢 数学题目：请完整识别数学表达式、运算符号、数字
-2. ✏️ 手写文字：请识别手写的数字、汉字和英文
-3. 📝 印刷文字：请识别印刷体文字内容  
-4. 📐 图形标注：注意几何图形中的标注文字
-5. 📋 表格内容：如果有表格，请逐行识别
+📝 **要识别的内容：**
+1. 🔢 具体的数学题目：计算式、填空题、应用题等
+2. 📋 题目要求：连一连、填一填、算一算、比一比等具体操作指令
+3. ✏️ 题目中的数字、符号、文字内容
+4. 📐 图形题中的标注数字和说明文字
+5. ☑️ 选择题的选项内容(A/B/C/D)
 
-请按以下格式输出：
-- 每行一个完整的题目或文本内容
-- 保持数学表达式的完整性
-- 如果是选择题，包含选项内容
-- 忽略明显的噪点或无意义字符
+🚫 **要忽略的内容：**
+1. 📖 **页面标题**：如"20以内退位减法运算"、"数学练习"等顶部标题
+2. 📄 **页码编号**：如页面底部的"47"、"第15页"等
+3. ⏰ **时间提示**：如"完成时间___分"等时间相关文字
+4. 🎨 **装饰元素**：边框文字、水印、背景文字等
+5. 📋 **练习状态**：如"很棒哦"、"还不错"、"加油哦"等状态提示
 
-开始识别：`
+✅ **输出格式要求：**
+- 每行输出一个独立的题目
+- 如果一张图有多个题目，分别输出，用题目序号区分
+- 只输出纯粹的题目内容，不包含标题和装饰文字
+- 保持数学表达式和题目要求的完整性
+
+请开始识别图片中的题目内容：`
 
   // 🔑 构建请求数据（与现有API保持一致）
   const requestData = {
@@ -2518,17 +2550,32 @@ async function detectQuestionRegionsWithAliyun(imageData) {
                 image: imageData.startsWith('data:') ? imageData : `data:image/jpeg;base64,${imageData}`
               },
               {
-                text: `请分析这张图片：
-1. 图片中有几个独立的题目？
-2. 每个题目大致在图片的哪个区域？
+                text: `请分析这张图片中的小学数学作业题目结构：
 
-请按以下格式回答：
+🎯 **分析目标：**
+识别图片中有几个独立的题目（大题），以及每个题目的具体位置。
+
+🔍 **识别标准：**
+- 寻找题目序号：如"1."、"2."、"（1）"、"（2）"等
+- 寻找题目类型标识：如"连一连"、"比一比"、"算一算"、"填一填"等
+- 忽略页面标题：如"20以内退位减法运算"等顶部标题
+- 忽略页码：如底部的"47"等页码数字
+
+📋 **回答格式：**
 题目数量：X个
-题目1位置：上半部分/下半部分/左半部分/右半部分/全图
-题目2位置：上半部分/下半部分/左半部分/右半部分/全图
+题目1内容：[题目类型]，位置：[区域位置]
+题目2内容：[题目类型]，位置：[区域位置]
 ...
 
-如果只有1个题目或题目无法明确分离，请回答：题目数量：1个`
+💡 **示例：**
+如果看到"1. 连一连，请帮小鸟回到各自的家"在上半部分，"2. 比一比，算一算，填一填"在下半部分，则回答：
+题目数量：2个
+题目1内容：连一连，位置：上半部分
+题目2内容：比一比算一算填一填，位置：下半部分
+
+🚫 如果只有1个题目或无法明确分离，请回答：题目数量：1个
+
+请开始分析：`
               }
             ]
           }
@@ -2629,15 +2676,25 @@ function parseLayoutAnalysisResult(analysisText) {
       return [{ region: 'full', confidence: 1.0 }]
     }
     
-    // 解析每个题目的位置
-    const positionMatches = analysisText.match(/题目\d+位置[：:]\s*([^\n\r]+)/gi)
+    // 🔧 解析新格式：题目X内容：[类型]，位置：[区域]
+    const contentMatches = analysisText.match(/题目\d+内容[：:]\s*([^，\n\r]+)[，,]\s*位置[：:]\s*([^\n\r]+)/gi)
     
-    if (positionMatches && positionMatches.length > 1) {
-      positionMatches.forEach((match, index) => {
-        const positionText = match.split(/[：:]/)[1].trim()
+    if (contentMatches && contentMatches.length > 1) {
+      console.log('📊 [版面分析] 检测到详细题目信息:', contentMatches)
+      
+      contentMatches.forEach((match, index) => {
+        // 提取题目内容和位置
+        const parts = match.split(/[，,]/)
+        const contentPart = parts[0] // 题目X内容：xxx
+        const positionPart = parts[1] // 位置：xxx
+        
+        const questionContent = contentPart.split(/[：:]/)[1]?.trim() || ''
+        const positionText = positionPart?.split(/[：:]/)[1]?.trim() || ''
+        
         let region = 'full'
         let confidence = 0.8
         
+        // 🎯 根据位置描述确定区域
         if (positionText.includes('上半部分') || positionText.includes('上部')) {
           region = 'top_half'
           confidence = 0.9
@@ -2656,9 +2713,46 @@ function parseLayoutAnalysisResult(analysisText) {
           region: region,
           confidence: confidence,
           questionIndex: index + 1,
-          description: positionText
+          questionType: questionContent, // 🆕 新增：题目类型信息
+          description: positionText,
+          rawContent: questionContent // 🆕 新增：原始内容
         })
+        
+        console.log(`📋 [版面分析] 题目${index + 1}: ${questionContent} -> ${region} (${confidence})`)
       })
+    } else {
+      // 🔄 回退到旧格式解析
+      console.log('⚠️ [版面分析] 使用旧格式解析...')
+      const positionMatches = analysisText.match(/题目\d+位置[：:]\s*([^\n\r]+)/gi)
+      
+      if (positionMatches && positionMatches.length > 1) {
+        positionMatches.forEach((match, index) => {
+          const positionText = match.split(/[：:]/)[1].trim()
+          let region = 'full'
+          let confidence = 0.8
+          
+          if (positionText.includes('上半部分') || positionText.includes('上部')) {
+            region = 'top_half'
+            confidence = 0.9
+          } else if (positionText.includes('下半部分') || positionText.includes('下部')) {
+            region = 'bottom_half'
+            confidence = 0.9
+          } else if (positionText.includes('左半部分') || positionText.includes('左部')) {
+            region = 'left_half'
+            confidence = 0.8
+          } else if (positionText.includes('右半部分') || positionText.includes('右部')) {
+            region = 'right_half'
+            confidence = 0.8
+          }
+          
+          regions.push({
+            region: region,
+            confidence: confidence,
+            questionIndex: index + 1,
+            description: positionText
+          })
+        })
+      }
     }
     
     // 如果解析失败，按题目数量平均分割
@@ -2708,12 +2802,71 @@ async function cropImageByRegion(imageData, regionInfo) {
 function mergeMultiRegionOCRResults(ocrResults) {
   console.log('🔄 [结果合并] 开始合并', ocrResults.length, '个OCR结果')
   
-  // 合并文本内容
-  const combinedTexts = ocrResults
-    .filter(result => result.success && result.data.ocrText)
-    .map(result => result.data.ocrText)
+  // 🔧 智能过滤和标识题目
+  const processedTexts = []
+  const questionRegions = []
   
-  if (combinedTexts.length === 0) {
+  ocrResults.forEach((result, index) => {
+    if (result.success && result.data.ocrText) {
+      const regionText = result.data.ocrText
+      const regionInfo = result.regionInfo || {} // 区域信息
+      
+      // 🎯 生成智能题目标识
+      let questionLabel = ''
+      if (regionInfo.questionType) {
+        // 如果有题目类型信息，使用语义标识
+        questionLabel = `题目${index + 1}（${regionInfo.questionType}）`
+      } else {
+        // 否则使用简单序号
+        questionLabel = `题目${index + 1}`
+      }
+      
+      // 🧹 内容智能过滤：移除明显的标题内容
+      let cleanedText = regionText
+      
+      // 检测并移除常见的标题模式
+      const titlePatterns = [
+        /^\d+以内.*运算.*$/,           // "20以内退位减法运算"等
+        /^第?\d+页?$/,               // 页码
+        /^完成时间.*$/,              // 时间提示
+        /^.*练习.*$/,                // 练习标题
+        /^数学.*$/,                  // 学科标题
+        /^\d+[：:]\d+$/               // 时间格式
+      ]
+      
+      titlePatterns.forEach(pattern => {
+        if (pattern.test(cleanedText.trim())) {
+          console.log('🚫 [内容过滤] 检测到标题内容，已移除:', cleanedText.trim())
+          cleanedText = ''
+        }
+      })
+      
+      // 如果内容被过滤光了，使用原始内容但添加警告
+      if (!cleanedText.trim()) {
+        console.log('⚠️ [内容过滤] 过滤后内容为空，保留原始内容')
+        cleanedText = regionText
+      }
+      
+      // 🏷️ 生成最终的标识文本
+      const finalText = `${questionLabel}: ${cleanedText}`
+      processedTexts.push(finalText)
+      
+      // 记录区域信息
+      questionRegions.push({
+        questionIndex: index + 1,
+        text: finalText,
+        originalText: regionText,
+        cleanedText: cleanedText,
+        region: regionInfo.region || 'unknown',
+        questionType: regionInfo.questionType || 'unknown',
+        confidence: result.data.confidence || 0
+      })
+      
+      console.log(`✅ [结果合并] 区域${index + 1}处理完成: ${questionLabel}`)
+    }
+  })
+  
+  if (processedTexts.length === 0) {
     throw new Error('所有区域OCR识别都失败')
   }
   
@@ -2723,24 +2876,20 @@ function mergeMultiRegionOCRResults(ocrResults) {
   // 合并结果
   const mergedResult = {
     ...baseResult.data,
-    ocrText: combinedTexts, // 返回数组，保持题目分离
-    questionCount: combinedTexts.length,
+    ocrText: processedTexts, // 返回智能标识的题目数组
+    questionCount: processedTexts.length,
     
     // 新增：多题目模式标识
     isMultiQuestion: true,
-    questionRegions: ocrResults.map((result, index) => ({
-      questionIndex: index + 1,
-      text: result.success ? result.data.ocrText : '',
-      region: result.regionInfo || 'unknown',
-      confidence: result.success ? result.data.confidence : 0
-    })),
+    processingMode: 'intelligent-region-separation',
+    questionRegions: questionRegions,
     
     // 合并的总体信息
     totalConfidence: ocrResults.reduce((sum, result) => 
       sum + (result.success ? result.data.confidence : 0), 0) / ocrResults.length
   }
   
-  console.log('✅ [结果合并] 完成，共', combinedTexts.length, '个题目')
+  console.log('✅ [结果合并] 完成，共', processedTexts.length, '个智能标识题目')
   return mergedResult
 }
 
