@@ -2908,7 +2908,7 @@ function mergeRegionOCRResultsForBatch(regionOCRResults, fileName) {
   let combinedSubject = 'math'
   let combinedGrade = 1
   
-  // 遍历每个区域的结果
+  // 🔧 智能处理每个区域的结果，添加过滤逻辑
   regionOCRResults.forEach((regionResult, index) => {
     if (regionResult.error) {
       console.warn(`⚠️ [批量OCR-结果合并] 区域 ${regionResult.regionIndex} 处理失败:`, regionResult.error)
@@ -2916,10 +2916,51 @@ function mergeRegionOCRResultsForBatch(regionOCRResults, fileName) {
     }
     
     const result = regionResult.result
+    const regionInfo = regionResult.regionInfo || {}
+    
     if (result && result.ocrText && Array.isArray(result.ocrText)) {
-      // 添加区域标识
+      // 🎯 为每个文本应用智能过滤和标识
       result.ocrText.forEach((text, textIndex) => {
-        combinedTexts.push(`[区域${regionResult.regionIndex}-题目${textIndex + 1}] ${text}`)
+        // 🧹 智能过滤标题内容
+        let cleanedText = text
+        
+        // 检测并移除常见的标题模式
+        const titlePatterns = [
+          /^\d+以内.*运算.*$/,           // "20以内退位减法运算"等
+          /^第?\d+页?$/,               // 页码
+          /^完成时间.*$/,              // 时间提示
+          /^.*练习.*$/,                // 练习标题
+          /^数学.*$/,                  // 学科标题
+          /^\d+[：:]\d+$/,             // 时间格式
+          /^[\d\s]*$/                  // 纯数字或空白
+        ]
+        
+        let titleRemoved = false
+        titlePatterns.forEach(pattern => {
+          if (pattern.test(cleanedText.trim())) {
+            console.log(`🚫 [批量OCR-内容过滤] 区域${regionResult.regionIndex} 检测到标题内容，已移除:`, cleanedText.trim())
+            titleRemoved = true
+          }
+        })
+        
+        // 如果检测到标题，跳过这个文本
+        if (titleRemoved) {
+          return
+        }
+        
+        // 🏷️ 生成智能题目标识
+        let questionLabel = ''
+        if (regionInfo.questionType) {
+          questionLabel = `题目${regionResult.regionIndex}（${regionInfo.questionType}）`
+        } else {
+          questionLabel = `题目${regionResult.regionIndex}`
+        }
+        
+        // 🎯 只有非标题内容才添加到结果中
+        const finalText = `${questionLabel}: ${cleanedText}`
+        combinedTexts.push(finalText)
+        
+        console.log(`✅ [批量OCR-结果合并] 区域${regionResult.regionIndex} 处理完成: ${questionLabel}`)
       })
       
       totalQuestionCount += result.questionCount || result.ocrText.length
