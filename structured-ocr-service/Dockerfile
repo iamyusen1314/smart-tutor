@@ -7,8 +7,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# PaddleOCR requires system libs for image processing
-RUN apt-get update && \
+# Use Aliyun mirrors for faster apt downloads
+RUN printf 'deb http://mirrors.aliyun.com/debian bullseye main contrib non-free\n' \
+         'deb http://mirrors.aliyun.com/debian bullseye-updates main contrib non-free\n' \
+         'deb http://mirrors.aliyun.com/debian-security bullseye-security main contrib non-free\n' \
+      > /etc/apt/sources.list && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
       build-essential \
       libglib2.0-0 \
@@ -19,7 +23,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Upgrade pip and install PaddlePaddle via official mirror, then remaining deps
+RUN python -m pip install --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir paddlepaddle==2.6.0 -i https://mirror.baidu.com/pypi/simple && \
+    pip install --no-cache-dir -r requirements.txt -i https://mirror.baidu.com/pypi/simple
 
 COPY app.py .
 
