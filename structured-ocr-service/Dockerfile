@@ -24,10 +24,10 @@ RUN printf 'deb http://mirrors.aliyun.com/debian bullseye main contrib non-free\
 
 COPY requirements.txt .
 
-# Upgrade pip and install PaddlePaddle via official mirror, then remaining deps
+# Upgrade pip and install PaddlePaddle + remaining dependencies
 RUN python -m pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir paddlepaddle==2.6.0 -i https://mirror.baidu.com/pypi/simple && \
-    pip install --no-cache-dir -r requirements.txt -i https://mirror.baidu.com/pypi/simple
+    pip install --no-cache-dir paddlepaddle==2.6.0 && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .
 
